@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>KIKIKAL_Register</title>
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:ital,wght@0,200..1000;1,200..1000&display=swap" rel="stylesheet"/>
+</head>
+<body>
+
+  <div class="container">
+
+  <h1 class="logo">KIKIKAL</h1>
+  <p class="subtitle">Start your nutrition journey today</p>
+
+  <div class="register-card">
+
+    <div class="from_group">
+      <h2 class="heading">Create Account</h2>
+      <p class="desc">Sign up to start tracking your nutrition</p>
+    </div>
+
+
+    <div class="from_group">
+      <label class="label-fullname">Full name</label>
+      <input type="text" id="reg-name" class="input fullname" placeholder="Your name">
+    </div>
+
+
+    <div class="from_group">
+      <label class="label-email">Email</label>
+      <input type="email" id="reg-email" class="input email" placeholder="you@example.com">
+    </div>
+
+
+    <div class="from_group">
+      <label class="label-password">Password</label>
+      <input type="password" id="reg-password" class="input password" placeholder="***********">
+    </div>
+
+
+    <div class="from_group">
+      <label class="label-cpassword">Confirm Password</label>
+      <input type="password" id="reg-cpassword" class="input cpassword" placeholder="***********">
+    </div>
+
+    <button class="btn" onclick="handleRegister(event)">Create Account</button>
+
+    <p class="signin">Already have an account? <a href="login.html">Sign In</a></p>
+  </div>
+  </div>
+  <script src="auth.js"></script>
+</body>
+</html>

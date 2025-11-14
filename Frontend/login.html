@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>KIKIKAL – Login</title>
+    <link rel="stylesheet" href="styles.css" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:ital,wght@0,200..1000;1,200..1000&display=swap" rel="stylesheet"/>
+  </head>
+  <body>
+    <div class="container">
+      <h1 class="logo">KIKIKAL</h1>
+      <p class="subtitle">Welcome to your nutrition journey</p>
+
+      <div class="login-card">
+        <div class="from_group">
+          <p class="heading">Sign In</p>
+          <p class="desc">Enter your credentials to access your account</p>
+        </div>
+
+        <div class="from_group">
+          <label>Email</label>
+        <input type="email" id="email" placeholder="you@example.com" />
+        </div>
+        <div class="from_group">
+          <label>Password</label>
+          <input type="password" id="password" placeholder="***********" />
+        </div>
+        <button onclick="handleLogin()" class="btn">Sign In</button>
+
+        <p class="signup">
+          Don't have an account? <a href="register.html">Sign up</a>
+        </p>
+      </div>
+    </div>
+    <script src="auth.js"></script>
+  </body>
+</html>

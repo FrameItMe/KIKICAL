@@ -4,14 +4,22 @@
   "scripts": {
     "dev": "tsx watch src/index.ts",
     "build": "tsc",
-    "start": "node dist/index.js"
+    "start": "node dist/index.js",
+    "serve-frontend": "http-server Frontend -p 5500"
   },
   "dependencies": {
     "@hono/node-server": "^1.19.6",
-    "hono": "^4.10.5"
+    "@types/better-sqlite3": "^7.6.13",
+    "bcrypt": "^6.0.0",
+    "better-sqlite3": "^12.4.1",
+    "hono": "^4.10.5",
+    "jsonwebtoken": "^9.0.2"
   },
   "devDependencies": {
+    "@types/bcrypt": "^6.0.0",
+    "@types/jsonwebtoken": "^9.0.10",
     "@types/node": "^20.11.17",
+    "dotenv": "^17.2.3",
     "tsx": "^4.7.1",
     "typescript": "^5.8.3"
   }
