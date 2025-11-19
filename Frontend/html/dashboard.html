@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>KIKIKAL Dashboard</title>
+  <link rel="stylesheet" href="../style/kikical.css">
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@300;400;600;800&display=swap" rel="stylesheet">
+</head>
+
+<body>
+
+<header class="nav">
+  <div class="nav-left">
+    <span class="logo-icon">🍽️</span>
+    <span class="logo-text">KIKIKAL</span>
+  </div>
+
+  <nav class="nav-center">
+    <a href="#" class="nav-item active">Dashboard</a>
+    <a href="#" class="nav-item">Meals</a>
+    <a href="#" class="nav-item">Progress</a>
+    <a href="#" class="nav-item">Achievements</a>
+  </nav>
+
+  <div class="nav-right">
+    <button>🔔</button>
+    <button>⚙️</button>
+    <button>👤</button>
+  </div>
+</header>
+
+<main class="dashboard">
+
+  <!-- GREETING -->
+  <section class="greeting">
+    <h2 id="greet-title">Good afternoon, FRAME!</h2>
+    <p class="sub">Let’s make today a healthy one</p>
+  </section>
+
+  <!-- TOP GRID -->
+  <section class="top-grid">
+
+    <!-- SUMMARY CARD -->
+    <div class="summary-card">
+      <h3 class="card-title">Today's Summary</h3>
+
+      <div class="circle-col">
+        <div class="circle">0</div>
+        <p class="circle-caption">net calories<br>of 3,200 goal</p>
+      </div>
+
+      <div class="summary-right">
+        <div class="sum-row">
+          <div><span class="num">0</span><p>Consumed</p></div>
+          <div><span class="num">0</span><p>Exercise</p></div>
+          <div><span class="num big">3200</span><p>Remaining</p></div>
+        </div>
+
+        <div class="macro-box">
+          <p class="macro-title">Macros Today</p>
+          <div class="macro-row">
+            <span>0g Protein</span>
+            <span>0g Carbs</span>
+            <span>0g Fat</span>
+          </div>
+        </div>
+
+        <div class="progress-bar">
+          <div class="progress-fill" style="width:0%"></div>
+        </div>
+        <p class="progress-label">0%</p>
+      </div>
+    </div>
+
+    <!-- ACTIONS RIGHT -->
+    <div class="actions">
+      <button class="action green">➕ Log Meal</button>
+      <button class="action red">➕ Log Workout</button>
+
+      <div class="motivation">
+        <h4>Daily Motivation</h4>
+        <p>"Frame jao chu mak mak<br>and He also jao chu more than frame"</p>
+      </div>
+    </div>
+
+  </section>
+
+  <!-- INSIGHTS -->
+  <section class="insights">
+    <h3>Insights</h3>
+
+    <div class="insight-grid">
+
+      <div class="insight-card">
+        <p class="ins-title">Nutrition Score</p>
+        <h2 class="main">8.2/10</h2>
+        <p class="small">Good job keng na!</p>
+      </div>
+
+      <div class="insight-card">
+        <p class="ins-title">Hydration</p>
+        <h2 class="main">6/8 glasses</h2>
+        <p class="small">2 more to go</p>
+      </div>
+
+      <div class="insight-card">
+        <p class="ins-title">Badges Earned</p>
+        <h2 class="main">0</h2>
+        <p class="small">Keep it up!</p>
+      </div>
+
+      <div class="insight-card">
+        <p class="ins-title">Active Challenges</p>
+        <h2 class="main">3</h2>
+        <p class="small">In progress</p>
+      </div>
+
+    </div>
+  </section>
+
+</main>
+
+</body>
+</html>
