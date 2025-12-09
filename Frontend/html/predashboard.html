@@ -8,28 +8,50 @@
       href="https://fonts.googleapis.com/css2?family=Nunito:wght@300;400;600;700;800&display=swap"
       rel="stylesheet"
     />
-    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+
   </head>
 
   <body class="kiki-body">
     <!-- Top Nav bar -->
-    <header class="kiki-nav">
-      <div class="kiki-nav-left">
-        <div class="kiki-logo-icon">🍽️</div>
-        <div class="kiki-logo-text">KIKIKAL</div>
+<header class="nav">
+  <div class="nav-container">
+    <a href="dashboard.html" class="nav-left">
+      <div class="logo-icon">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+        </svg>
       </div>
-      <nav class="kiki-nav-center">
-        <a href="#" class="kiki-nav-item">Dashboard</a>
-        <a href="#" class="kiki-nav-item">Meals</a>
-        <a href="#" class="kiki-nav-item">Progress</a>
-        <a href="#" class="kiki-nav-item">Achievements</a>
-      </nav>
-      <div class="kiki-nav-right">
-        <button class="kiki-nav-icon-btn">🔔</button>
-        <button class="kiki-nav-icon-btn">⚙️</button>
-        <button class="kiki-nav-icon-btn">👤</button>
-      </div>
-    </header>
+      <span class="logo-text">KIKIKAL</span>
+    </a>
+
+    <nav class="nav-center">
+      <a href="#" class="nav-item active">Dashboard</a>
+      <a href="#" class="nav-item">Meals</a>
+      <a href="#" class="nav-item">Workouts</a>
+      <a href="#" class="nav-item">Achievements</a>
+    </nav>
+
+    <div class="nav-right">
+      <button class="nav-icon-btn">
+        <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 0 1-3.46 0"/>
+        </svg>
+      </button>
+      <button class="nav-icon-btn">
+        <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z"/>
+          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1Z"/>
+        </svg>
+      </button>
+      <button class="nav-icon-btn">
+        <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+          <circle cx="12" cy="7" r="4"/>
+        </svg>
+      </button>
+    </div>
+  </div>
+</header>
 
     <main class="setup-main">
       <!-- =============== PRE DASHBOARD (Welcome) =============== -->
@@ -58,27 +80,27 @@
       <!-- =============== SETUP STEPS (1–4) =============== -->
       <section id="setup-flow" class="setup-flow" style="display: none">
         <!-- Progress bar -->
-        <div class="setup-progress">
-          <div class="setup-step-label">
+        <!-- Progress bar -->
+        <div class="setup-progress-container">
+          <div class="setup-header-info">
             <span id="step-label">Step 1 of 4</span>
+            <span class="setup-percent-text" id="step-percent">25%</span>
           </div>
           <div class="setup-progress-bar">
             <div id="step-progress" class="setup-progress-inner"></div>
-          </div>
-          <div class="setup-percent">
-            <span id="step-percent">25%</span>
           </div>
         </div>
 
         <!-- Content card -->
         <div class="setup-card">
-          <!-- STEP 1 -->
+          <div id="setup-error-message" class="auth-message error" style="margin-bottom: 16px; text-align: center;"></div>
+
+          <!-- Step 1: Basic Info -->
           <div class="setup-step" data-step="1">
             <h2 class="setup-title">Tell us about yourself</h2>
             <p class="setup-subtitle">
-              We’ll use this to calculate your personalized nutrition plan.
+              We'll use this to calculate your personalized nutrition plan
             </p>
-
             <div class="setup-form-card">
               <div class="setup-field-group">
                 <label class="field-label">Gender</label>
@@ -310,38 +332,34 @@
               Based on your information, here are your daily nutrition targets.
             </p>
 
-            <div class="setup-form-card summary-card">
-              <div class="summary-top">
-                <div class="summary-icon">✅</div>
-                <div class="summary-main">
-                  <div class="summary-label">Daily Calorie Target</div>
-                  <div class="summary-cal">
-                    <span id="sum-cal">0</span> kcal
-                  </div>
-                  <div class="summary-caption">calories per day</div>
+            <div class="setup-form-card summary-card-hero">
+              <div class="summary-icon-circle">🎯</div>
+              <div class="summary-hero-content">
+                <div class="summary-label">Daily Calorie Target</div>
+                <div class="summary-cal-big">
+                  <span id="sum-cal">0</span>
                 </div>
+                <div class="summary-caption">calories per day</div>
               </div>
             </div>
 
-            <div class="setup-form-card summary-card">
-              <div class="summary-label">Macro Breakdown</div>
-              <div class="macro-row">
-                <div class="macro-chip protein">
-                  <div class="macro-title">P</div>
-                  <div class="macro-value">
-                    <span id="sum-protein">0</span> g
-                  </div>
-                  <div class="macro-caption">Protein</div>
+            <div class="setup-form-card summary-card-macros">
+              <div class="summary-label-left">Macro Breakdown</div>
+              <div class="macro-row-circles">
+                <div class="macro-circle-item">
+                  <div class="m-circle bg-green-light">P</div>
+                  <div class="m-val"><span id="sum-protein">0</span>g</div>
+                  <div class="m-lbl">Protein</div>
                 </div>
-                <div class="macro-chip carb">
-                  <div class="macro-title">C</div>
-                  <div class="macro-value"><span id="sum-carb">0</span> g</div>
-                  <div class="macro-caption">Carbs</div>
+                <div class="macro-circle-item">
+                  <div class="m-circle bg-red-light">C</div>
+                  <div class="m-val"><span id="sum-carb">0</span>g</div>
+                  <div class="m-lbl">Carbs</div>
                 </div>
-                <div class="macro-chip fat">
-                  <div class="macro-title">F</div>
-                  <div class="macro-value"><span id="sum-fat">0</span> g</div>
-                  <div class="macro-caption">Fat</div>
+                <div class="macro-circle-item">
+                  <div class="m-circle bg-orange-light">F</div>
+                  <div class="m-val"><span id="sum-fat">0</span>g</div>
+                  <div class="m-lbl">Fat</div>
                 </div>
               </div>
             </div>

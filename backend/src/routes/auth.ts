@@ -1,82 +1,155 @@
 import { Hono } from "hono";
-import { db } from "../database/db";
+import { db } from "../database/db.js";
+import { nowLocalDateTime } from "../utils/time.js";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import 'dotenv/config';
 
-const JWT_SECRET = process.env.JWT_SECRET || "KIKICAL_SECRET_KEY";
+
+const JWT_SECRET = process.env.JWT_SECRET || 
+                   process.env.jwt_secret || 
+                   "This_IS_MY_KIKICAL_SECRET_KEY_MUHAHA";
 
 const authRoute = new Hono();
 
+// REGISTER 
 authRoute.post("/register", async (c) => {
   try {
     const body = await c.req.json();
+    // normalize and validate email
     const name = (body.name || "").trim();
     const email = (body.email || "").trim().toLowerCase();
+
+    //check email duplication (case-insensitive)
+    const check = db
+      .prepare("SELECT id FROM users WHERE LOWER(email) = ?")
+      .get(email);
+
+    if (check) {
+      return c.json({ error: "Email already exists" }, 400);
+    }
+    
+    // validate required fields
     const password = body.password || "";
+    if (!name || !email || !password) {
+      return c.json({ error: "Name, email and password are required" }, 400);
+    }
+    if (password.length < 4) {
+      return c.json({ error: "Password must be at least 4 characters" }, 400);
+    }
 
-    if (!name || !email || !password)
-      return c.json({ error: "Please fill all fields." }, 400);
+    //hash password
+    const hashedPassword = await bcrypt.hash(password, 10);
 
-    const check = db.prepare("SELECT id FROM users WHERE LOWER(email)=?").get(email);
-    if (check) return c.json({ error: "Email already exists" }, 400);
+    // provide defaults for required fields if not present from frontend
+    const gender = body.gender || "unspecified";
+    const birthdate = body.birthdate || "0000-00-00";
+    const height_cm = body.height_cm ?? 0;
+    const weight_kg = body.weight_kg ?? 0;
+    const activity_level = body.activity_level || "unknown";
+    const target_weight_kg = body.target_weight_kg ?? null;
 
-    const hash = await bcrypt.hash(password, 10);
+    //insert user into database
+    const stmt = db.prepare(`
+      INSERT INTO users 
+      (name, email, password_hash, gender, birthdate, height_cm, weight_kg, activity_level, target_weight_kg, created_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `);
 
-    const result = db.prepare(`
-      INSERT INTO users (name, email, password_hash)
-      VALUES (?, ?, ?)
-    `).run(name, email, hash);
+    //execute insertion
+    const result = stmt.run(
+      name,
+      email,
+      hashedPassword,
+      gender,
+      birthdate,
+      height_cm,
+      weight_kg,
+      activity_level,
+      target_weight_kg,
+      nowLocalDateTime()
+    );
 
-    return c.json({ message: "Register success", user_id: result.lastInsertRowid });
-
-  } catch (err) {
-    return c.json({ error: "Server error" }, 500);
+    //return success response
+    return c.json({
+      message: "User registered",
+      user_id: result.lastInsertRowid,
+    });
+  } catch (error) {
+    console.error(error);
+    return c.json({ error: "Internal server error" }, 500);
   }
 });
 
+
+// User Login
 authRoute.post("/login", async (c) => {
   try {
     const body = await c.req.json();
+    // normalize email for lookup
     const email = (body.email || "").trim().toLowerCase();
     const password = body.password;
 
-    const user = db.prepare(
-      "SELECT id, password_hash FROM users WHERE LOWER(email)=?"
-    ).get(email);
+    if(!email || !password) {
+      return c.json({ error: "Email and password are required" }, 400);
+    }
 
-    if (!user) return c.json({ error: "Invalid email or password" }, 401);
+    const user = db
+      .prepare("SELECT id, email, password_hash FROM users WHERE LOWER(email) = ?")
+      .get(email) as { id: number; email: string; password_hash: string } | undefined;
 
-    const match = await bcrypt.compare(password, user.password_hash);
-    if (!match) return c.json({ error: "Invalid email or password" }, 401);
+    if (!user) {
+      return c.json({ error: "Invalid email or password" }, 401);
+    }
 
-    // generate token (ไม่ผ่าน cookie)
+    const passwordMatch = await bcrypt.compare(password, user.password_hash);
+
+    if (!passwordMatch) {
+      return c.json({ error: "Invalid email or password" }, 401);
+    }
+    // Use global JWT secret (do not log secret value)
     const token = jwt.sign({ id: user.id }, JWT_SECRET, { expiresIn: "1d" });
 
     return c.json({
       message: "Login success",
-      token,
+      token: token,
+      user: {
+        id: user.id,
+        email: user.email,
+      }
     });
 
-  } catch {
-    return c.json({ error: "Server error" }, 500);
+  } catch (error) {
+    console.error(error);
+    return c.json({ error: "Internal server error" }, 500);
   }
 });
 
-authRoute.get("/me", async (c) => {
-  const token = c.req.header("Authorization");
 
-  if (!token) return c.json({ user: null });
+
+// User Logout (client handles localStorage)
+authRoute.post("/logout", (c) => {
+  return c.json({ message: "Logged out" });
+});
+
+
+// Get Current User Info
+authRoute.get("/me", async (c) => {
+  const token = c.req.header("Authorization") || "";
+
+  if (!token) {
+    return c.json({ user: null });
+  }
 
   try {
     const payload = jwt.verify(token, JWT_SECRET) as { id: number };
 
     const user = db.prepare(`
-      SELECT id, name, email FROM users WHERE id=?
+      SELECT id, name, email FROM users WHERE id = ?
     `).get(payload.id);
 
-    return c.json({ user });
-  } catch {
+    return c.json({ user: user || null });
+  } catch (err) {
     return c.json({ user: null });
   }
 });

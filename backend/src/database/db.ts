@@ -1,8 +1,31 @@
 import Database from "better-sqlite3";
 
-const db = new Database("src/database/kikical.db", {
-  verbose: console.log,
+const db = new Database("src/database/kikical.db", { 
+  fileMustExist: false,
+  timeout: 5000
 });
+
+// Set busy timeout FIRST before any pragma
+db.pragma("busy_timeout = 5000");
+
+// Reset to DELETE mode first to clear any locks
+try {
+  db.pragma("journal_mode = DELETE");
+} catch (e) {
+  console.warn("Could not reset journal mode:", e.message);
+}
+
+// Now enable WAL mode
+try {
+  const mode = db.pragma("journal_mode = WAL", { simple: true });
+  console.log(`✅ Journal mode set to: ${mode}`);
+} catch (e) {
+  console.warn("⚠️ Could not enable WAL mode:", e.message);
+  console.log("Continuing with DELETE mode...");
+}
+
+// Optimize performance
+db.pragma("synchronous = NORMAL");
 
 export { db };
 
@@ -115,6 +138,7 @@ CREATE TABLE IF NOT EXISTS workouts (
   name TEXT NOT NULL,
   calories_burned REAL NOT NULL,
   duration_minutes INTEGER,
+  workout_date TEXT NOT NULL,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (user_id) REFERENCES users(id)
 );

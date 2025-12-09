@@ -5,8 +5,10 @@
     "dev": "tsx watch src/index.ts",
     "build": "tsc",
     "start": "node dist/index.js",
-    "serve-frontend": "http-server ../Frontend -p 5500",
-    "db:init": "tsx src/scripts/init-db.ts"
+    "start_F": "http-server ../Frontend -p 5500",
+    "db:init": "tsx src/scripts/init-db.ts",
+    "db:seed:food": "tsx src/scripts/seed-food.ts",
+    "db:seed:achievements": "tsx src/scripts/seed-achievements.ts"
   },
   "dependencies": {
     "@hono/node-server": "^1.19.6",
