@@ -2,6 +2,8 @@ const API_BASE = "http://localhost:8000";
 
 let activeDate = getTodayDate();
 let pendingDeleteWorkoutId = null;
+let pendingEditWorkoutId = null;
+let editWorkoutData = null;
 
 document.addEventListener("DOMContentLoaded", () => {
   checkAuth();
@@ -82,6 +84,34 @@ async function submitWorkout() {
   }
 
   try {
+    // ถ้า edit mode
+    if (pendingEditWorkoutId) {
+      const updateRes = await fetch(`${API_BASE}/workouts/${pendingEditWorkoutId}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": token
+        },
+        body: JSON.stringify({
+          name,
+          calories_burned: calories,
+          duration_minutes: duration
+        })
+      });
+
+      if (updateRes.ok) {
+        closeModal();
+        pendingEditWorkoutId = null;
+        editWorkoutData = null;
+        loadDailyWorkouts();
+      } else {
+        const err = await updateRes.json();
+        alert("Failed to update workout: " + (err.error || "Unknown error"));
+      }
+      return;
+    }
+
+    // ถ้า add mode
     const res = await fetch(`${API_BASE}/workouts`, {
       method: "POST",
       headers: {
@@ -95,9 +125,9 @@ async function submitWorkout() {
       })
     });
 
-    if (workoutRes.ok) {
+    if (res.ok) {
       closeModal();
-      const data = await workoutRes.json();
+      const data = await res.json();
       
       if (data.unlocks && data.unlocks.length > 0) {
         data.unlocks.forEach(unlock => showAchievementNotification(unlock, 'badge'));
@@ -155,6 +185,8 @@ function openModal() {
 
 function closeModal() {
   document.getElementById("log-workout-modal").style.display = "none";
+  pendingEditWorkoutId = null;
+  editWorkoutData = null;
 }
 
 function renderWorkoutHistory(workouts) {
@@ -177,7 +209,10 @@ function renderWorkoutHistory(workouts) {
         <div class="meal-name">${workout.name}</div>
         <div class="meal-meta">${workout.calories_burned} kcal • ${workout.duration_minutes} min</div>
       </div>
+      <div class="meal-actions">
+      <button class="btn-edit-log" onclick="editWorkout(${workout.id})" title="Edit">✎</button>
       <button class="btn-delete-log" onclick="deleteWorkout(${workout.id})">&times;</button>
+      </div>
     `;
     list.appendChild(card);
   });
@@ -205,5 +240,41 @@ function startDailyRefresh() {
   }, 60000); // check every minute
 }
 
+async function editWorkout(workoutId) {
+  const token = localStorage.getItem("token");
+
+  try {
+    // Fetch current workouts for today
+    const res = await fetch(`${API_BASE}/workouts?date=${activeDate}`, {
+      headers: { "Authorization": token }
+    });
+
+    if (!res.ok) throw new Error("Failed to fetch workouts");
+    
+    const workouts = await res.json();
+    const workout = workouts.find(w => w.id === workoutId);
+
+    if (!workout) {
+      alert("Workout not found");
+      return;
+    }
+
+    // Load values into modal
+    document.getElementById("workout-name").value = workout.name;
+    document.getElementById("workout-calories").value = workout.calories_burned;
+    document.getElementById("workout-duration").value = workout.duration_minutes;
+
+    // Set edit mode
+    pendingEditWorkoutId = workoutId;
+    editWorkoutData = workout;
+
+    openModal();
+  } catch (err) {
+    console.error("Edit workout error:", err);
+    alert("Error: " + err.message);
+  }
+}
+
 window.quickLog = quickLog;
 window.deleteWorkout = deleteWorkout;
+window.editWorkout = editWorkout;

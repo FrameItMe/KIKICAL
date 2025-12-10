@@ -1,8 +1,7 @@
 import { Hono } from "hono";
 import { db } from "../database/db.js";
 import jwt from "jsonwebtoken";
-
-const JWT_SECRET = process.env.JWT_SECRET || "KIKICAL_SECRET_KEY";
+import { JWT_SECRET } from "../config.js";
 
 type Variables = {
   user: { id: number };
@@ -38,7 +37,7 @@ achievementsRoute.use("*", async (c, next) => {
   if (!token) return c.json({ error: "Not authenticated" }, 401);
 
   try {
-    const payload = jwt.verify(token, JWT_SECRET) as { id: number };
+    const payload = jwt.verify(token, JWT_SECRET!) as unknown as { id: number };
     c.set("user", payload);
     await next();
   } catch {

@@ -4,6 +4,8 @@ let currentFood = null;
 let selectedPortionMult = 1;
 let activeDate = getTodayDate();
 let pendingDeleteMealId = null;
+let pendingEditMealId = null;
+let editMealData = null;
 
 document.addEventListener("DOMContentLoaded", () => {
   checkAuth();
@@ -209,6 +211,33 @@ async function submitMeal() {
   }
 
   try {
+    // ถ้า edit mode
+    if (pendingEditMealId) {
+      const updateRes = await fetch(`${API_BASE}/meals/${pendingEditMealId}`, {
+        method: "PUT",
+        headers: { 
+          "Content-Type": "application/json",
+          "Authorization": token 
+        },
+        body: JSON.stringify({
+          meal_type: mealType,
+          portion_multiplier: selectedPortionMult
+        })
+      });
+
+      if (updateRes.ok) {
+        closeModal();
+        pendingEditMealId = null;
+        editMealData = null;
+        loadDailyMeals();
+      } else {
+        const err = await updateRes.json();
+        alert("Failed to update meal: " + (err.error || "Unknown error"));
+      }
+      return;
+    }
+
+    // ถ้า add mode
     let foodId;
     
     if (currentFood && currentFood.id) {
@@ -333,7 +362,10 @@ function renderMealHistory(meals) {
         <div class="meal-name">${meal.food_name}</div>
         <div class="meal-meta">${meal.meal_type} • ${cals} kcal</div>
       </div>
-      <button class="btn-delete-log" onclick="deleteLog(${meal.id})">&times;</button>
+      <div class="meal-actions">
+        <button class="btn-edit-log" onclick="editMeal(${meal.id})" title="Edit">✎</button>
+        <button class="btn-delete-log" onclick="deleteLog(${meal.id})">&times;</button>
+      </div>
     `;
     list.appendChild(card);
   });
@@ -344,7 +376,7 @@ async function deleteLog(id) {
   document.getElementById("delete-confirm-modal").style.display = "flex";
 }
 
-async function performDelete(id) {
+async function performDeleteMeal(id) {
   const token = localStorage.getItem("token");
   try {
     await fetch(`${API_BASE}/meals/${id}`, {
@@ -377,6 +409,53 @@ function quickSearch(term) {
   searchFood(term);
 }
 
+async function editMeal(mealId) {
+  const token = localStorage.getItem("token");
+  const user = await fetchUser();
+  if (!user) return;
+
+  const date = activeDate || getTodayDate();
+
+  try {
+    const res = await fetch(`${API_BASE}/meals/${user.id}?date=${date}`, {
+      headers: { "Authorization": token }
+    });
+    const meals = await res.json();
+    const meal = meals.find(m => m.id === mealId);
+    
+    if (!meal) {
+      alert("Meal not found");
+      return;
+    }
+
+    // Store meal data for update
+    editMealData = meal;
+    pendingEditMealId = mealId;
+
+    // Populate modal with current values
+    const modal = document.getElementById("log-meal-modal");
+    modal.style.display = "flex";
+    
+    document.getElementById("modal-meal-type").value = meal.meal_type;
+    document.getElementById("modal-food-name").value = meal.food_name;
+    document.getElementById("modal-food-id").value = meal.food_id;
+    document.getElementById("modal-cal").value = meal.calories_per_100g || 0;
+    document.getElementById("modal-protein").value = meal.protein_per_100g || 0;
+    document.getElementById("modal-carbs").value = meal.carb_per_100g || 0;
+    document.getElementById("modal-fat").value = meal.fat_per_100g || 0;
+    
+    selectedPortionMult = meal.portion_multiplier || 1;
+    document.getElementById("portion-slider").value = selectedPortionMult;
+    document.getElementById("slider-val").textContent = selectedPortionMult.toFixed(1) + "x";
+    document.querySelectorAll(".portion-btn").forEach(b => b.classList.remove("active"));
+    
+    currentFood = { id: meal.food_id };
+  } catch (err) {
+    console.error("Edit meal error:", err);
+  }
+}
+
 window.quickSearch = quickSearch;
 window.deleteLog = deleteLog;
+window.editMeal = editMeal;
 

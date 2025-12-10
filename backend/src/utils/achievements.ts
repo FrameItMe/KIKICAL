@@ -177,7 +177,7 @@ function updateChallengeProgress(userId: number, challengeName: string, currentV
   return null;
 }
 
-function calculateMealStreak(userId: number): number {
+export function calculateMealStreak(userId: number): number {
   const dates = db
     .prepare("SELECT DISTINCT meal_date FROM meal_log WHERE user_id = ? ORDER BY meal_date DESC")
     .all(userId) as Array<{ meal_date: string }>;

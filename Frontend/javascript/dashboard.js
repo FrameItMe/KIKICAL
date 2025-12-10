@@ -68,27 +68,60 @@ function updateUI(data) {
   if (greetTitle) greetTitle.innerText = `${getGreeting()}, ${data.username}!`;
 
   // 2. Targets & Consumed
-  const { consumed, burned, targets } = data;
+  const { consumed, burned, targets, remaining } = data;
   
-  // Calculate Net Calories: (Consumed - Burned)
-  const netCalories = Math.round(consumed.calories - burned);
-  const remaining = Math.round(targets.calories - netCalories);
+  // Net Calories = consumed (แคลอรี่ที่กินไป)
+  const netCalories = Math.round(consumed.calories);
+  
+  // Goal เพิ่มตาม workout = target + burned
+  const adjustedGoal = targets.calories + burned;
   
   // Update Text
   setText("cal-text", netCalories);
-  setText("cal-goal", formatNumber(targets.calories));
+  setText("cal-goal", formatNumber(Math.round(adjustedGoal)));
   
   setText("val-consumed", Math.round(consumed.calories));
   setText("val-burned", Math.round(burned));
-  setText("val-remaining", remaining);
+  setText("val-remaining", Math.round(remaining));
 
   // Update Macros
   setText("macro-p", `${Math.round(consumed.protein)}g / ${Math.round(targets.protein)}g Protein`);
   setText("macro-c", `${Math.round(consumed.carbs)}g / ${Math.round(targets.carbs)}g Carbs`);
   setText("macro-f", `${Math.round(consumed.fat)}g / ${Math.round(targets.fat)}g Fat`);
 
-  // Update Progress Bar
-  const percent = Math.min(100, Math.max(0, (netCalories / targets.calories) * 100));
+  // Insights cards
+  const insights = data.insights || {};
+
+  // Protein balance today
+  const protein = insights.protein || { pct: 0, consumed: 0, target: targets.protein };
+  const proteinPct = Math.min(100, Math.round(protein.pct || 0));
+  setText("ins-protein-main", `${proteinPct}%`);
+  setText("ins-protein-sub", `${Math.round(protein.consumed || 0)}g / ${Math.round(protein.target || 0)}g`);
+
+  // Carb/Fat balance
+  const carbfat = insights.carbFat || { carbPct: 0, fatPct: 0, carbConsumed: 0, fatConsumed: 0, carbTarget: targets.carbs, fatTarget: targets.fat };
+  const carbPctDisplay = Math.min(100, Math.round(carbfat.carbPct || 0));
+  const fatPctDisplay = Math.min(100, Math.round(carbfat.fatPct || 0));
+  setText("ins-carbfat-main", `${carbPctDisplay}% / ${fatPctDisplay}%`);
+  setText("ins-carbfat-sub", `${Math.round(carbfat.carbConsumed || 0)}g / ${Math.round(carbfat.carbTarget || 0)}g • ${Math.round(carbfat.fatConsumed || 0)}g / ${Math.round(carbfat.fatTarget || 0)}g`);
+
+  // Logging streak
+  const streakDays = insights.streakDays || 0;
+  setText("ins-streak-main", `${streakDays} day${streakDays === 1 ? "" : "s"}`);
+  setText("ins-streak-sub", streakDays >= 7 ? "Great consistency!" : "Keep logging daily");
+
+  // Latest badge
+  const badge = insights.latestBadge;
+  if (badge) {
+    setText("ins-badge-main", badge.name || "Badge unlocked");
+    setText("ins-badge-sub", `Earned ${badge.earned_date}`);
+  } else {
+    setText("ins-badge-main", "None yet");
+    setText("ins-badge-sub", "Complete goals to unlock");
+  }
+
+  // Update Progress Bar (based on adjusted goal)
+  const percent = Math.min(100, Math.max(0, (netCalories / adjustedGoal) * 100));
   const progressBar = document.getElementById("cal-progress");
   const progressLabel = document.getElementById("cal-percent");
   

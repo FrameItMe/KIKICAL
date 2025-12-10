@@ -1,14 +1,13 @@
 import { Hono } from "hono";
 import { db } from "../database/db.js";
-import { nowLocalDateTime } from "../utils/time.js";
+import { nowLocalDateTime, getToday } from "../utils/dateTime.js";
 import { checkBadges, checkChallenges } from "../utils/achievements.js";
 import jwt from "jsonwebtoken";
+import { JWT_SECRET } from "../config.js";
 
 type Variables = {
   user: { id: number };
 };
-
-const JWT_SECRET = process.env.JWT_SECRET || "KIKICAL_SECRET_KEY";
 
 const mealRoute = new Hono<{ Variables: Variables }>();
 
@@ -18,7 +17,7 @@ mealRoute.use("*", async (c, next) => {
   if (!token) return c.json({ error: "Not authenticated" }, 401);
 
   try {
-    const payload = jwt.verify(token, JWT_SECRET) as { id: number };
+    const payload = jwt.verify(token, JWT_SECRET!) as unknown as { id: number };
     c.set("user", payload);
     await next();
   } catch {
@@ -109,6 +108,30 @@ mealRoute.delete("/:id", (c) => {
   }
 
   db.prepare("DELETE FROM meal_log WHERE id = ?").run(id);
+  return c.json({ success: true });
+});
+
+// PUT /meals/:id - Update a meal log
+mealRoute.put("/:id", async (c) => {
+  const user = c.get("user") as { id: number };
+  const id = c.req.param("id");
+  const body = await c.req.json();
+  const { meal_type, portion_multiplier } = body;
+
+  if (!meal_type || portion_multiplier === undefined) {
+    return c.json({ error: "Missing required fields (meal_type, portion_multiplier)" }, 400);
+  }
+
+  const log = db.prepare("SELECT user_id FROM meal_log WHERE id = ?").get(id) as { user_id: number } | undefined;
+  if (!log) return c.json({ error: "Log not found" }, 404);
+
+  if (log.user_id !== user.id) {
+    return c.json({ error: "Unauthorized" }, 403);
+  }
+
+  db.prepare("UPDATE meal_log SET meal_type = ?, portion_multiplier = ? WHERE id = ?")
+    .run(meal_type, portion_multiplier, id);
+
   return c.json({ success: true });
 });
 

@@ -18,9 +18,9 @@ try {
 // Now enable WAL mode
 try {
   const mode = db.pragma("journal_mode = WAL", { simple: true });
-  console.log(`✅ Journal mode set to: ${mode}`);
+  console.log(`Journal mode set to: ${mode}`);
 } catch (e) {
-  console.warn("⚠️ Could not enable WAL mode:", e.message);
+  console.warn("Could not enable WAL mode:", e.message);
   console.log("Continuing with DELETE mode...");
 }
 

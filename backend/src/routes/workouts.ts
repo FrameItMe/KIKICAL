@@ -1,14 +1,13 @@
 import { Hono } from "hono";
 import { db } from "../database/db.js";
-import { nowLocalDateTime } from "../utils/time.js";
+import { nowLocalDateTime, getToday } from "../utils/dateTime.js";
 import { checkBadges, checkChallenges } from "../utils/achievements.js";
 import jwt from "jsonwebtoken";
+import { JWT_SECRET } from "../config.js";
 
 type Variables = {
   user: { id: number };
 };
-
-const JWT_SECRET = process.env.JWT_SECRET || "KIKICAL_SECRET_KEY";
 
 const workoutRoute = new Hono<{ Variables: Variables }>();
 
@@ -18,7 +17,7 @@ workoutRoute.use("*", async (c, next) => {
   if (!token) return c.json({ error: "Not authenticated" }, 401);
 
   try {
-    const payload = jwt.verify(token, JWT_SECRET) as { id: number };
+    const payload = jwt.verify(token, JWT_SECRET!) as unknown as { id: number };
     c.set("user", payload);
     await next();
   } catch {
@@ -57,7 +56,7 @@ workoutRoute.post("/", async (c) => {
   }
 
   const createdAt = nowLocalDateTime(); // precise log time in local YYYY-MM-DD HH:mm:ss
-  const workoutDate = new Date().toLocaleDateString('sv-SE'); // local date for daily grouping
+  const workoutDate = getToday(); // local date for daily grouping
 
   try {
     const info = db
@@ -107,6 +106,30 @@ workoutRoute.delete("/:id", (c) => {
   }
 
   db.prepare("DELETE FROM workouts WHERE id = ?").run(id);
+  return c.json({ success: true });
+});
+
+// PUT /workouts/:id - Update a workout
+workoutRoute.put("/:id", async (c) => {
+  const user = c.get("user") as { id: number };
+  const id = c.req.param("id");
+  const body = await c.req.json();
+  const { name, calories_burned, duration_minutes } = body;
+
+  if (!name || calories_burned === undefined) {
+    return c.json({ error: "Missing required fields (name, calories_burned)" }, 400);
+  }
+
+  const workout = db.prepare("SELECT user_id FROM workouts WHERE id = ?").get(id) as { user_id: number } | undefined;
+  if (!workout) return c.json({ error: "Workout not found" }, 404);
+
+  if (workout.user_id !== user.id) {
+    return c.json({ error: "Unauthorized" }, 403);
+  }
+
+  db.prepare("UPDATE workouts SET name = ?, calories_burned = ?, duration_minutes = ? WHERE id = ?")
+    .run(name, calories_burned, duration_minutes || 0, id);
+
   return c.json({ success: true });
 });
 

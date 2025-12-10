@@ -1,14 +1,9 @@
 import { Hono } from "hono";
 import { db } from "../database/db.js";
-import { nowLocalDateTime } from "../utils/time.js";
+import { nowLocalDateTime } from "../utils/dateTime.js";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
-import 'dotenv/config';
-
-
-const JWT_SECRET = process.env.JWT_SECRET || 
-                   process.env.jwt_secret || 
-                   "This_IS_MY_KIKICAL_SECRET_KEY_MUHAHA";
+import { JWT_SECRET } from "../config.js";
 
 const authRoute = new Hono();
 
@@ -108,7 +103,7 @@ authRoute.post("/login", async (c) => {
       return c.json({ error: "Invalid email or password" }, 401);
     }
     // Use global JWT secret (do not log secret value)
-    const token = jwt.sign({ id: user.id }, JWT_SECRET, { expiresIn: "1d" });
+    const token = jwt.sign({ id: user.id }, JWT_SECRET!, { expiresIn: "1d" });
 
     return c.json({
       message: "Login success",
@@ -142,7 +137,7 @@ authRoute.get("/me", async (c) => {
   }
 
   try {
-    const payload = jwt.verify(token, JWT_SECRET) as { id: number };
+    const payload = jwt.verify(token, JWT_SECRET!) as unknown as unknown as { id: number };
 
     const user = db.prepare(`
       SELECT id, name, email FROM users WHERE id = ?

@@ -1,11 +1,10 @@
 import { Hono } from "hono";
 import { db } from "../database/db.js";
 import jwt from "jsonwebtoken";
-import 'dotenv/config';
-
-const JWT_SECRET = process.env.JWT_SECRET || 
-                   process.env.jwt_secret || 
-                   "This_IS_MY_KIKICAL_SECRET_KEY_MUHAHA";
+import { JWT_SECRET } from "../config.js";
+import { getToday } from "../utils/dateTime.js";
+import { calculateAge, calculateBMR, calculateTDEE, calculateCalorieTarget, calculateMacros } from "../utils/userCalculations.js";
+import { calculateMealStreak } from "../utils/achievements.js";
 
 const userRoute = new Hono();
 
@@ -14,7 +13,7 @@ userRoute.get("/setup-status", async (c) => {
   if (!token) return c.json({ need_setup: true });
 
   try {
-    const payload = jwt.verify(token, JWT_SECRET) as { id: number };
+    const payload = jwt.verify(token, JWT_SECRET!) as unknown as { id: number };
 
     const target = db.prepare(`
       SELECT id FROM targets WHERE user_id = ?
@@ -37,7 +36,7 @@ userRoute.post("/setup", async (c) => {
   }
 
   try {
-    payload = jwt.verify(token, JWT_SECRET) as { id: number };
+    payload = jwt.verify(token, JWT_SECRET!) as unknown as { id: number };
   } catch (error) {
     return c.json({ error: "Invalid token" }, 401);
   }
@@ -65,52 +64,24 @@ userRoute.post("/setup", async (c) => {
     target_weight = weight;
   }
 
-
-  //calculate Age
-  const birth = new Date(birthdate);
-  if (isNaN(birth.getTime())) {
+  // Calculate age
+  const age = calculateAge(birthdate);
+  if (age === null) {
     return c.json({ error: "Invalid birthdate" }, 400);
   }
-  const today = new Date();
-  let age = today.getFullYear() - birth.getFullYear();
-  const monthDiff = today.getMonth() - birth.getMonth();
-  if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) {
-    age--;
-  }
 
-  //calculate BMR
-  let BMR;
-  if (gender === "male") {
-    BMR = 10 * weight + 6.25 * height - 5 * age + 5;
-  } else {
-    BMR = 10 * weight + 6.25 * height - 5 * age - 161;
-  }
+  // Calculate BMR
+  const BMR = calculateBMR(gender, weight, height, age);
 
-  //TDEE multiplier
-  const activityMultipliers: Record<string, number> = {
-    sedentary: 1.2,
-    light: 1.375,
-    moderate: 1.55,
-    active: 1.725,
-    very_active: 1.9,
-  };
+  // Calculate TDEE
+  const TDEE = calculateTDEE(BMR, activity);
 
-  const mult = activityMultipliers[activity] ?? 1.2;
-  const TDEE = BMR * mult;
+  // Calculate calorie target
+  const calTarget = calculateCalorieTarget(TDEE, goal);
 
-  //calculate calorie target
-  let calTarget = TDEE;
-  if (goal === "lose") calTarget = TDEE - 300;
-  if (goal === "gain") calTarget = TDEE + 300;
-
-const baseweight = target_weight || weight;
-
-  const protein = baseweight * 1.6; // grams
-  const fat = baseweight * 0.8; // grams
-  const calProtein = protein * 4;
-  const calFat = fat * 9;
-  const remainingCalories = calTarget - (calProtein + calFat);
-  const carb = remainingCalories > 0 ? remainingCalories / 4 : 0;
+  // Calculate macros
+  const baseWeight = target_weight || weight;
+  const { protein, fat, carb } = calculateMacros(calTarget, baseWeight);
 
   db.prepare(`
     UPDATE users
@@ -155,7 +126,7 @@ userRoute.get("/dashboard", async (c) => {
   }
 
   try {
-    const payload = jwt.verify(token, JWT_SECRET) as { id: number };
+    const payload = jwt.verify(token, JWT_SECRET!) as unknown as { id: number };
 
     // ดึงข้อมูล user
     const user = db.prepare(`
@@ -186,7 +157,7 @@ userRoute.get("/dashboard", async (c) => {
     };
 
     // คำนวณ consumed calories จาก meal_log วันนี้
-    const today = new Date().toLocaleDateString('sv-SE'); // YYYY-MM-DD in local time
+    const today = getToday(); // YYYY-MM-DD in local time
     
     const meals = db.prepare(`
       SELECT m.portion_multiplier, f.calories_per_100g, f.protein_per_100g, f.carb_per_100g, f.fat_per_100g
@@ -226,6 +197,34 @@ userRoute.get("/dashboard", async (c) => {
       totalBurned += w.calories_burned || 0;
     });
 
+    // Calculate remaining: (target - consumed + burned), but never negative
+    const netRemaining = targets.daily_calorie_target - totalCalories + totalBurned;
+    const remaining = Math.max(0, netRemaining);
+
+    // Insights
+    const proteinPct = targets.daily_protein_target > 0
+      ? (totalProtein / targets.daily_protein_target) * 100
+      : 0;
+    const carbPct = targets.daily_carb_target > 0
+      ? (totalCarbs / targets.daily_carb_target) * 100
+      : 0;
+    const fatPct = targets.daily_fat_target > 0
+      ? (totalFat / targets.daily_fat_target) * 100
+      : 0;
+
+    const streakDays = calculateMealStreak(payload.id);
+
+    const latestBadge = db
+      .prepare(
+        `SELECT b.name, b.icon_url as icon, ueb.earned_date
+         FROM user_earned_badges ueb
+         JOIN badges b ON ueb.badge_id = b.id
+         WHERE ueb.user_id = ?
+         ORDER BY ueb.earned_date DESC, ueb.id DESC
+         LIMIT 1`
+      )
+      .get(payload.id) as { name: string; icon: string | null; earned_date: string } | undefined;
+
     return c.json({
       username: user.name,
       targets: {
@@ -241,6 +240,24 @@ userRoute.get("/dashboard", async (c) => {
         fat: totalFat,
       },
       burned: totalBurned,
+      remaining: remaining,
+      insights: {
+        protein: {
+          pct: proteinPct,
+          consumed: totalProtein,
+          target: targets.daily_protein_target,
+        },
+        carbFat: {
+          carbPct,
+          fatPct,
+          carbConsumed: totalCarbs,
+          fatConsumed: totalFat,
+          carbTarget: targets.daily_carb_target,
+          fatTarget: targets.daily_fat_target,
+        },
+        streakDays,
+        latestBadge: latestBadge || null,
+      },
     });
 
   } catch (error) {
