@@ -293,10 +293,10 @@ async function finishSetup() {
 async function initPredashboard() {
   // Check auth via token
   const token = localStorage.getItem('token');
-  if (!token) {
-    window.location.href = "login.html";
-    return;
-  }
+  // if (!token) {
+  //   window.location.href = "login.html";
+  //   return;
+  // }
 
   try {
     // Get user info

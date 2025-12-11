@@ -257,7 +257,7 @@ input::placeholder {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 40px;
+  margin-bottom: 120px;
   margin-left: 0;
 }
 
@@ -332,6 +332,7 @@ input::placeholder {
   font-size: 14px;
   color: #555;
   font-weight: 600;
+  gap: 8px;
 }
 
 .setup-brand {
@@ -653,6 +654,7 @@ input::placeholder {
   color: white;
   border-radius: 12px;
   padding: 10px 22px;
+  margin-top: 27px;
   cursor: pointer;
   border: none;
 }
@@ -836,13 +838,13 @@ button:focus-visible {
 .greeting-header {
   display: flex;
   justify-content: space-between;
-  align-items: flex-end;
+  align-items: flex-start;
   margin-bottom: 24px;
 }
 
 #greet-title {
   font-size: 32px;
-  font-weight: 800;
+  font-weight: 600;
   color: #222;
   margin-bottom: 8px;
 }
@@ -857,11 +859,13 @@ button:focus-visible {
   border: 1px solid #ddd;
   padding: 10px 20px;
   border-radius: 12px;
+  margin-top: 27px;
   font-weight: 600;
   color: #555;
   cursor: pointer;
   transition: all 0.2s;
 }
+
 .edit-profile-btn:hover {
   background: #f9f9f9;
   border-color: #ccc;
@@ -895,7 +899,7 @@ button:focus-visible {
   text-align: center;
   font-size: 18px;
   color: #222;
-  font-weight: 700;
+  font-weight: 600;
   margin: 0;
 }
 
@@ -1207,15 +1211,19 @@ button:focus-visible {
 .meals-header-row {
   display: flex;
   justify-content: space-between;
-  align-items: center;
+  align-items: flex-start;
   margin-bottom: 24px;
 }
 
 .page-title {
-  font-size: 28px;
+  font-size: 32px;
+  font-weight: 600;
+  color: #222;
+  margin-bottom: 8px;
+  /* font-size: 28px;
   font-weight: 800;
   color: #2d3436;
-  margin: 0;
+  margin: 0; */
 }
 
 .page-subtitle {
@@ -1225,10 +1233,11 @@ button:focus-visible {
 }
 
 .kiki-btn-green {
-  background: #2ecc71;
+  background: #58a547;
   color: white;
   border: none;
   padding: 10px 20px;
+  margin-top: 27px;
   border-radius: 8px;
   font-weight: 600;
   cursor: pointer;
@@ -1236,14 +1245,18 @@ button:focus-visible {
 }
 
 .kiki-btn-green:hover {
-  background: #27ae60;
+  background: #4e9443;
   transform: translateY(-1px);
 }
 
 /* Search Card */
 .search-card {
+  background-color: white;
   padding: 24px;
   margin-bottom: 32px;
+  border-radius: 16px;
+  padding: 40px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
 }
 
 .search-bar-wrapper {
@@ -1254,7 +1267,7 @@ button:focus-visible {
 .search-icon {
   position: absolute;
   left: 16px;
-  top: 50%;
+  top: 37%;
   transform: translateY(-50%);
   color: #b2bec3;
 }
@@ -1305,7 +1318,7 @@ button:focus-visible {
 /* Meal History */
 .section-title {
   font-size: 20px;
-  font-weight: 700;
+  font-weight: 600;
   color: #2d3436;
   margin-bottom: 16px;
 }
@@ -1426,9 +1439,9 @@ button:focus-visible {
 }
 
 .portion-btn.active {
-  background: #2ecc71;
+  background: #58a547;
   color: white;
-  border-color: #2ecc71;
+  border-color: #58a547;
 }
 
 .slider-header {
@@ -1738,4 +1751,151 @@ button:focus-visible {
   font-size: 13px;
   color: #636e72;
   line-height: 1.4;
+}
+
+/* ================= WORKOUT PAGE – TODAY'S ACTIVITY ================= */
+
+.workout-summary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+  margin-top: 16px;
+}
+
+.summary-item {
+  background: #f8fafb;
+  border-radius: 16px;
+  padding: 14px 16px;
+  text-align: left;
+  border: 1px solid #ecf0f1;
+}
+
+.summary-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #7f8c8d;
+  margin-bottom: 6px;
+}
+
+.summary-value {
+  font-size: 24px;
+  font-weight: 800;
+  color: #2d3436;
+  line-height: 1.1;
+}
+
+.summary-unit {
+  font-size: 12px;
+  color: #95a5a6;
+  margin-top: 4px;
+}
+
+/* ================= WORKOUT PAGE – QUICK LOG ================= */
+
+.quick-workout-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 10px;
+  margin-top: 0;           /* ดึงทั้งกริดขึ้นมาใกล้หัวการ์ดมากขึ้น */
+}
+
+/* สร้างหัวแบบ ☆ Quick Log เหมือน quick-label ใน Meals */
+.quick-workout-grid::before {
+  content: "☆ Quick Log";
+  grid-column: 1 / -1;          /* กินเต็มแถวด้านบน */
+  font-size: 12px;
+  font-weight: 700;
+  color: #2ecc71;
+  align-self: flex-start;
+  margin-bottom: 6px;           /* เว้นระยะจากหัวไปถึงปุ่ม */
+}
+
+/* ปรับ tag-btn เมื่ออยู่ใน Quick Log เท่านั้น */
+.quick-workout-grid .tag-btn {
+  width: 100%;
+  text-align: left;
+  padding: 12px 14px;
+  border-radius: 14px;
+  font-size: 14px;
+  display: inline-block;
+  line-height: 1.4;
+  background: #f8fafb;
+  border: 1px solid #dfe6e9;
+  transition: all 0.15s ease;
+}
+
+.quick-workout-grid .tag-btn small {
+  display: block;
+  font-size: 12px;
+  color: #7f8c8d;
+  margin-top: 2px;
+}
+
+.quick-workout-grid .tag-btn:hover {
+  background: #e7f7ed;
+  border-color: #2ecc71;
+  transform: translateY(-1px);
+}
+
+
+/* ================= WORKOUT PAGE – HISTORY ================= */
+
+#workout-history-list {
+  margin-bottom: 40px;
+}
+
+/* ใช้ถ้าจะสร้างการ์ด workout แยกจาก meals */
+.workout-item-card {
+  background: white;
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+}
+
+.workout-main {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.workout-name {
+  font-weight: 700;
+  color: #2d3436;
+  font-size: 14px;
+}
+
+.workout-meta {
+  font-size: 12px;
+  color: #636e72;
+}
+
+/* ================= WORKOUT PAGE – MODAL TWEAK ================= */
+
+#log-workout-modal .kiki-input {
+  border-radius: 12px;
+  border-color: #dfe6e9;
+  font-size: 14px;
+}
+
+/* ================= WORKOUT PAGE – GROUP TODAY + QUICK AS ONE BOX ================= */
+
+/* การ์ด Today’s Activity: ตัดมุมล่าง + ตัดเส้นล่างออก เพื่อให้ต่อกับการ์ดล่าง */
+.search-card:has(.workout-summary) {
+  margin-bottom: 0;
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+  border-bottom: none;
+}
+
+/* การ์ด Quick Log: ตัดมุมบน + ดึงขึ้นมาต่อกับกล่องบน */
+.search-card:has(.quick-workout-grid) {
+  margin-top: 0;
+  border-top-left-radius: 0;
+  border-top-right-radius: 0;
+  border-top: 1px solid #f0f0f0;   /* เส้นแบ่งเบาๆ ระหว่าง Today กับ Quick Log */
+  padding-top: 24px;               /* ลด padding บนให้หัว ☆ ใกล้หัว Quick Log */
 }

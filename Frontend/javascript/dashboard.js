@@ -15,9 +15,9 @@ function getTodayDate() {
 
 function checkAuth() {
   const token = localStorage.getItem("token");
-  if (!token) {
-    window.location.href = "login.html";
-  }
+  // if (!token) {
+  //   window.location.href = "login.html";
+  // }
 }
 
 function setupEventListeners() {
