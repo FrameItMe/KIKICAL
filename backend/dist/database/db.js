@@ -1,34 +1,29 @@
 import Database from "better-sqlite3";
-
-const db = new Database("src/database/kikical.db", { 
-  fileMustExist: false,
-  timeout: 5000
+const db = new Database("src/database/kikical.db", {
+    fileMustExist: false,
+    timeout: 5000
 });
-
 // Set busy timeout FIRST before any pragma
 db.pragma("busy_timeout = 5000");
-
 // Reset to DELETE mode first to clear any locks
 try {
-  db.pragma("journal_mode = DELETE");
-} catch (e) {
-  console.warn("Could not reset journal mode:", e instanceof Error ? e.message : String(e));
+    db.pragma("journal_mode = DELETE");
 }
-
+catch (e) {
+    console.warn("Could not reset journal mode:", e instanceof Error ? e.message : String(e));
+}
 // Now enable WAL mode
 try {
-  const mode = db.pragma("journal_mode = WAL", { simple: true });
-  console.log(`Journal mode set to: ${mode}`);
-} catch (e) {
-  console.warn("Could not enable WAL mode:", e instanceof Error ? e.message : String(e));
-  console.log("Continuing with DELETE mode...");
+    const mode = db.pragma("journal_mode = WAL", { simple: true });
+    console.log(`Journal mode set to: ${mode}`);
 }
-
+catch (e) {
+    console.warn("Could not enable WAL mode:", e instanceof Error ? e.message : String(e));
+    console.log("Continuing with DELETE mode...");
+}
 // Optimize performance
 db.pragma("synchronous = NORMAL");
-
 export { db };
-
 const schema = `
 
 -- USERS TABLE
@@ -144,15 +139,12 @@ CREATE TABLE IF NOT EXISTS workouts (
 );
 
 `;
-
 export function initDB() {
-  console.log("Initializing database schema...");
-  db.exec(schema);
-  console.log("Schema applied successfully");
-
-  const tables = db
-    .prepare("SELECT name FROM sqlite_master WHERE type='table'")
-    .all();
-
-  console.log("Tables:", tables);
+    console.log("Initializing database schema...");
+    db.exec(schema);
+    console.log("Schema applied successfully");
+    const tables = db
+        .prepare("SELECT name FROM sqlite_master WHERE type='table'")
+        .all();
+    console.log("Tables:", tables);
 }

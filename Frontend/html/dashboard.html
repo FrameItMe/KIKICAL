@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>KIKIKAL Dashboard</title>
+  <link rel="stylesheet" href="../style/kikical.css">
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@300;400;600;800&display=swap" rel="stylesheet">
+</head>
+
+<body>
+
+<header class="nav">
+  <div class="nav-container">
+    <a href="dashboard.html" class="nav-left">
+      <div class="logo-icon">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+        </svg>
+      </div>
+      <span class="logo-text">KIKIKAL</span>
+    </a>
+
+
+    <nav class="nav-center">
+      <a href="dashboard.html" class="nav-item active">Dashboard</a>
+      <a href="meals.html" class="nav-item">Meals</a>
+      <a href="workouts.html" class="nav-item">Workouts</a>
+      <a href="achievements.html" class="nav-item">Achievements</a>
+    </nav>
+
+    <div class="nav-right">
+        <button class="nav-toggle" id="nav-toggle" aria-label="Open menu" aria-expanded="false">☰</button>
+      <button class="nav-icon-btn" id="theme-toggle">
+        <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" id="sun-icon">
+          <circle cx="12" cy="12" r="5"/>
+          <line x1="12" y1="1" x2="12" y2="3"/>
+          <line x1="12" y1="21" x2="12" y2="23"/>
+          <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
+          <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+          <line x1="1" y1="12" x2="3" y2="12"/>
+          <line x1="21" y1="12" x2="23" y2="12"/>
+          <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
+          <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+        </svg>
+        <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24" id="moon-icon" style="display: none;">
+          <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+        </svg>
+      </button>
+      <button class="nav-icon-btn" id="settings-btn">
+        <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z"/>
+          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1Z"/>
+        </svg>
+      </button>
+      <div class="profile-dropdown">
+        <button class="nav-icon-btn" id="profile-btn">
+          <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+            <circle cx="12" cy="7" r="4"/>
+          </svg>
+        </button>
+        <div class="dropdown-menu" id="profile-menu">
+          <a href="profile.html" class="dropdown-item">
+            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+              <circle cx="12" cy="7" r="4"/>
+            </svg>
+            Profile
+          </a>
+          <button class="dropdown-item" id="logout-btn">
+            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+              <polyline points="16 17 21 12 16 7"/>
+              <line x1="21" y1="12" x2="9" y2="12"/>
+            </svg>
+            Logout
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<!-- Mobile/Tablet Drawer -->
+<div class="nav-drawer" id="nav-drawer" aria-hidden="true">
+  <div class="drawer-content">
+    <a href="dashboard.html" class="drawer-item">Dashboard</a>
+    <a href="meals.html" class="drawer-item">Meals</a>
+    <a href="workouts.html" class="drawer-item">Workouts</a>
+    <a href="achievements.html" class="drawer-item">Achievements</a>
+    <a href="profile.html" class="drawer-item">Profile</a>
+       <button class="drawer-item" id="drawer-theme-toggle">Dark Mode</button>
+       <div class="drawer-spacer"></div>
+       <button class="drawer-item" id="drawer-logout">Logout</button>
+  </div>
+  <div class="drawer-backdrop" id="drawer-backdrop"></div>
+</div>
+
+<main class="dashboard">
+
+  <!-- GREETING -->
+  <section class="greeting-header">
+    <div style="margin-top: 24px;">
+      <h2 id="greet-title">Good afternoon, FRAME!</h2>
+      <p class="sub">Let's make today a healthy one</p>
+    </div>
+    <button class="edit-profile-btn" id="edit-profile-btn">Edit Profile</button>
+  </section>
+
+  <!-- TOP GRID -->
+  <section class="top-grid">
+
+    <!-- SUMMARY CARD -->
+    <div class="summary-card">
+      <h3 class="card-title">Today's Summary</h3>
+
+      <div class="circle-col">
+        <div class="circle" id="cal-circle"><span id="cal-text" class="circle-inner-text">0</span></div>
+        <p class="circle-caption">net calories of <span id="cal-goal">3,200</span> goal</p>
+      </div>
+
+      <div class="summary-right">
+        <div class="sum-row">
+          <div class="stat-card bg-green">
+            <span class="num" id="val-consumed">0</span>
+            <p>Consumed</p>
+          </div>
+          <div class="stat-card bg-red">
+            <span class="num" id="val-burned">0</span>
+            <p>Exercise</p>
+          </div>
+          <div class="stat-card bg-gray">
+            <span class="num big" id="val-remaining">3200</span>
+            <p>Remaining</p>
+          </div>
+        </div>
+
+        <div class="macro-box">
+          <p class="macro-title">Macros Today</p>
+          <div class="macro-row">
+            <span id="macro-p" data-label="Protein">0g / 0g</span>
+            <span id="macro-c" data-label="Carbs">0g / 0g</span>
+            <span id="macro-f" data-label="Fat">0g / 0g</span>
+          </div>
+        </div>
+
+        <div class="progress-bar">
+          <div class="progress-fill" id="cal-progress" style="width:0%"></div>
+        </div>
+        <p class="progress-label" id="cal-percent">0%</p>
+      </div>
+    </div>
+
+    <!-- ACTIONS RIGHT -->
+    <div class="actions">
+      <button class="action-card green" id="btn-log-meal">
+        <div class="action-icon">✚</div>
+        <div class="action-text">
+          <span class="act-title">Log Meal</span>
+          <span class="act-desc">Track your nutrition</span>
+        </div>
+      </button>
+      <button class="action-card red" id="btn-log-workout">
+        <div class="action-icon">✚</div>
+        <div class="action-text">
+          <span class="act-title">Log Workout</span>
+          <span class="act-desc">Track your exercise</span>
+        </div>
+      </button>
+
+      <div class="motivation">
+        <h4>Daily Motivation</h4>
+        <p>"Frame jao chu mak mak<br>and He also jao chu more than frame"</p>
+      </div>
+    </div>
+
+  </section>
+
+  <!-- INSIGHTS -->
+  <section class="insights">
+    <h3>Insights</h3>
+
+    <div class="insight-grid">
+
+      <div class="insight-card">
+        <div class="ins-icon bg-green-light">🥩</div>
+        <div class="ins-content">
+          <p class="ins-title">Protein Balance Today</p>
+          <h2 class="main" id="ins-protein-main">0%</h2>
+          <p class="small" id="ins-protein-sub">0g / 0g</p>
+        </div>
+      </div>
+
+      <div class="insight-card">
+        <div class="ins-icon bg-blue-light">⚖️</div>
+        <div class="ins-content">
+          <p class="ins-title">Carb/Fat Balance</p>
+          <h2 class="main" id="ins-carbfat-main">0% / 0%</h2>
+          <p class="small" id="ins-carbfat-sub">carb vs fat to target</p>
+        </div>
+      </div>
+
+      <div class="insight-card">
+        <div class="ins-icon bg-pink-light">📅</div>
+        <div class="ins-content">
+          <p class="ins-title">Logging Streak</p>
+          <h2 class="main" id="ins-streak-main">0 days</h2>
+          <p class="small" id="ins-streak-sub">Keep it going!</p>
+        </div>
+      </div>
+
+      <div class="insight-card">
+        <div class="ins-icon bg-orange-light">🏅</div>
+        <div class="ins-content">
+          <p class="ins-title">Latest Badge</p>
+          <h2 class="main" id="ins-badge-main">None yet</h2>
+          <p class="small" id="ins-badge-sub">Complete goals to unlock</p>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+</main>
+
+<script src="../javascript/theme.js"></script>
+<script src="../javascript/logout.js"></script>
+<script src="../javascript/dashboard.js"></script>
+</body>
+</html>

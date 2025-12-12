@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>KIKIKAL_Pre_Dashboard</title>
+    <link rel="stylesheet" href="../style/kikical.css" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Nunito:wght@300;400;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+
+  </head>
+
+  <body class="kiki-body">
+
+    <main class="setup-main">
+      <!-- =============== PRE DASHBOARD (Welcome) =============== -->
+      <section id="pre-dashboard" class="pre-dashboard">
+        <div class="pre-header">
+          <div>
+            <h2 id="greeting-text">Good afternoon!</h2>
+            <p class="pre-subtext">Complete your profile to get started.</p>
+          </div>
+          <button class="kiki-btn" onclick="startSetup()">
+            Setup Profile
+          </button>
+        </div>
+
+        <div class="pre-center-card">
+          <div class="pre-icon-circle">🎯</div>
+          <h3 class="pre-title">Welcome to KIKIKAL</h3>
+          <p class="pre-desc">
+            Set up your profile to get personalized calorie goals and start
+            tracking your nutrition journey.
+          </p>
+          <button class="kiki-btn" onclick="startSetup()">Get Started</button>
+        </div>
+      </section>
+
+      <!-- =============== SETUP STEPS (1–4) =============== -->
+      <section id="setup-flow" class="setup-flow" style="display: none">
+        <!-- Progress bar -->
+        <!-- Progress bar -->
+        <div class="setup-progress-container">
+          <div class="setup-header-info">
+            <span id="step-label">Step 1 of 4</span>
+            <span class="setup-percent-text" id="step-percent"> 25%</span>
+          </div>
+          <div class="setup-progress-bar">
+            <div id="step-progress" class="setup-progress-inner"></div>
+          </div>
+        </div>
+
+        <!-- Content card -->
+        <div class="setup-card">
+          <div id="setup-error-message" class="auth-message error" style="margin-bottom: 16px; text-align: center;"></div>
+
+          <!-- Step 1: Basic Info -->
+          <div class="setup-step" data-step="1">
+            <h2 class="setup-title">Tell us about yourself</h2>
+            <p class="setup-subtitle">
+              We'll use this to calculate your personalized nutrition plan
+            </p>
+            <div class="setup-form-card">
+              <div class="setup-field-group">
+                <label class="field-label">Gender</label>
+                <div class="pill-toggle">
+                  <button
+                    type="button"
+                    class="pill-option"
+                    data-gender="male"
+                    onclick="selectGender('male')"
+                  >
+                    Male
+                  </button>
+                  <button
+                    type="button"
+                    class="pill-option"
+                    data-gender="female"
+                    onclick="selectGender('female')"
+                  >
+                    Female
+                  </button>
+                </div>
+              </div>
+
+              <div class="setup-field-group">
+                <label class="field-label" for="birthdate">Birthdate</label>
+                <input type="date" id="birthdate" class="kiki-input" />
+              </div>
+
+              <div class="setup-two-cols">
+                <div class="setup-field-group">
+                  <label class="field-label" for="height-input"
+                    >Height (cm)</label
+                  >
+                  <input
+                    id="height-input"
+                    type="number"
+                    min="100"
+                    max="250"
+                    class="kiki-input"
+                  />
+                </div>
+                <div class="setup-field-group">
+                  <label class="field-label" for="weight-input"
+                    >Weight (kg)</label
+                  >
+                  <input
+                    id="weight-input"
+                    type="number"
+                    min="30"
+                    max="300"
+                    class="kiki-input"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div class="setup-footer-btns">
+              <button
+                class="kiki-btn-secondary"
+                onclick="goPrevStep()"
+                disabled
+              >
+                ← Previous
+              </button>
+              <button class="kiki-btn" onclick="goNextStep()">Next →</button>
+            </div>
+          </div>
+
+          <!-- STEP 2 -->
+          <div class="setup-step" data-step="2" style="display: none">
+            <h2 class="setup-title">What’s your activity level?</h2>
+            <p class="setup-subtitle">
+              This helps us calculate your daily calorie needs.
+            </p>
+
+            <div class="setup-form-card">
+              <button
+                type="button"
+                class="activity-option"
+                data-activity="sedentary"
+                onclick="selectActivity('sedentary')"
+              >
+                <div>
+                  <div class="activity-title">Sedentary (1.2×)</div>
+                  <div class="activity-desc">
+                    Little to no exercise, desk job
+                  </div>
+                </div>
+                <div class="activity-radio"></div>
+              </button>
+
+              <button
+                type="button"
+                class="activity-option"
+                data-activity="light"
+                onclick="selectActivity('light')"
+              >
+                <div>
+                  <div class="activity-title">Lightly Active (1.375×)</div>
+                  <div class="activity-desc">Light exercise 1–3 days/week</div>
+                </div>
+                <div class="activity-radio"></div>
+              </button>
+
+              <button
+                type="button"
+                class="activity-option"
+                data-activity="moderate"
+                onclick="selectActivity('moderate')"
+              >
+                <div>
+                  <div class="activity-title">Moderately Active (1.55×)</div>
+                  <div class="activity-desc">
+                    Moderate exercise 3–5 days/week
+                  </div>
+                </div>
+                <div class="activity-radio"></div>
+              </button>
+
+              <button
+                type="button"
+                class="activity-option"
+                data-activity="active"
+                onclick="selectActivity('active')"
+              >
+                <div>
+                  <div class="activity-title">Very Active (1.725×)</div>
+                  <div class="activity-desc">Hard exercise 6–7 days/week</div>
+                </div>
+                <div class="activity-radio"></div>
+              </button>
+
+              <button
+                type="button"
+                class="activity-option"
+                data-activity="very_active"
+                onclick="selectActivity('very_active')"
+              >
+                <div>
+                  <div class="activity-title">Extremely Active (1.9×)</div>
+                  <div class="activity-desc">Physical job + exercise</div>
+                </div>
+                <div class="activity-radio"></div>
+              </button>
+            </div>
+
+            <div class="setup-footer-btns">
+              <button class="kiki-btn-secondary" onclick="goPrevStep()">
+                ← Previous
+              </button>
+              <button class="kiki-btn" onclick="goNextStep()">Next →</button>
+            </div>
+          </div>
+
+          <!-- STEP 3 -->
+          <div class="setup-step" data-step="3" style="display: none">
+            <h2 class="setup-title">What’s your goal?</h2>
+            <p class="setup-subtitle">
+              Let’s create a plan that works for you.
+            </p>
+
+            <div class="setup-form-card goals-card">
+              <div class="goals-header">Primary Goal</div>
+              <div class="goals-grid">
+                <button
+                  type="button"
+                  class="goal-option"
+                  data-goal="lose"
+                  onclick="selectGoal('lose')"
+                >
+                  <div class="goal-icon">📉</div>
+                  <div class="goal-title">Lose Weight</div>
+                  <div class="goal-desc">Create a calorie deficit</div>
+                </button>
+
+                <button
+                  type="button"
+                  class="goal-option"
+                  data-goal="maintain"
+                  onclick="selectGoal('maintain')"
+                >
+                  <div class="goal-icon">➖</div>
+                  <div class="goal-title">Maintain Weight</div>
+                  <div class="goal-desc">Stay at current weight</div>
+                </button>
+
+                <button
+                  type="button"
+                  class="goal-option"
+                  data-goal="gain"
+                  onclick="selectGoal('gain')"
+                >
+                  <div class="goal-icon">📈</div>
+                  <div class="goal-title">Gain Weight</div>
+                  <div class="goal-desc">Build muscle and mass</div>
+                </button>
+              </div>
+
+              <div
+                id="target-weight-wrap"
+                class="setup-field-group"
+                style="margin-top: 16px; display: none"
+              >
+                <label class="field-label" for="target-weight-input">
+                  Target weight (kg)
+                </label>
+                <input
+                  id="target-weight-input"
+                  type="number"
+                  min="30"
+                  max="300"
+                  class="kiki-input"
+                />
+              </div>
+            </div>
+
+            <div class="setup-footer-btns">
+              <button class="kiki-btn-secondary" onclick="goPrevStep()">
+                ← Previous
+              </button>
+              <button class="kiki-btn" onclick="goNextStep()">Next →</button>
+            </div>
+          </div>
+
+          <!-- STEP 4 (Summary) -->
+          <div class="setup-step" data-step="4" style="display: none">
+            <h2 class="setup-title">Your personalized plan is ready!</h2>
+            <p class="setup-subtitle">
+              Based on your information, here are your daily nutrition targets.
+            </p>
+
+            <div class="setup-form-card summary-card-hero">
+              <div class="summary-icon-circle">🎯</div>
+              <div class="summary-hero-content">
+                <div class="summary-label">Daily Calorie Target</div>
+                <div class="summary-cal-big">
+                  <span id="sum-cal">0</span>
+                </div>
+                <div class="summary-caption">calories per day</div>
+              </div>
+            </div>
+
+            <div class="setup-form-card summary-card-macros">
+              <div class="summary-label-left">Macro Breakdown</div>
+              <div class="macro-row-circles">
+                <div class="macro-circle-item">
+                  <div class="m-circle bg-green-light">P</div>
+                  <div class="m-val"><span id="sum-protein">0</span>g</div>
+                  <div class="m-lbl">Protein</div>
+                </div>
+                <div class="macro-circle-item">
+                  <div class="m-circle bg-red-light">C</div>
+                  <div class="m-val"><span id="sum-carb">0</span>g</div>
+                  <div class="m-lbl">Carbs</div>
+                </div>
+                <div class="macro-circle-item">
+                  <div class="m-circle bg-orange-light">F</div>
+                  <div class="m-val"><span id="sum-fat">0</span>g</div>
+                  <div class="m-lbl">Fat</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="setup-footer-btns">
+              <button class="kiki-btn-secondary" onclick="goPrevStep()">
+                ← Previous
+              </button>
+              <button class="kiki-btn" onclick="finishSetup()">
+                Start Tracking Now
+              </button>
+            </div>
+          </div>
+
+          <div id="setup-message" class="auth-message" aria-live="polite"></div>
+        </div>
+      </section>
+    </main>
+
+    <script src="../javascript/predashboard.js"></script>
+  </body>
+</html>

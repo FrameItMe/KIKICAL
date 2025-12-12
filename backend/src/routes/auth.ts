@@ -1,19 +1,13 @@
 import { Hono } from "hono";
-import Database from "better-sqlite3";
+import { db } from "../database/db.js";
+import { nowLocalDateTime } from "../utils/dateTime.js";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
-import 'dotenv/config';
-// Support both env names and provide a dev default
-const JWT_SECRET = process.env.JWT_SECRET || process.env.jwt_secret || "This_IS_MY_KIKICAL_SECRET_KEY_MUHAHA";
-
-// Connect to SQLite database
-const db = new Database("src/database/kikical.db", {
-  verbose: console.log,
-});
+import { JWT_SECRET } from "../config.js";
 
 const authRoute = new Hono();
 
-// User Registration
+// REGISTER 
 authRoute.post("/register", async (c) => {
   try {
     const body = await c.req.json();
@@ -30,12 +24,21 @@ authRoute.post("/register", async (c) => {
       return c.json({ error: "Email already exists" }, 400);
     }
     
+    // validate required fields
+    const password = body.password || "";
+    if (!name || !email || !password) {
+      return c.json({ error: "Name, email and password are required" }, 400);
+    }
+    if (password.length < 4) {
+      return c.json({ error: "Password must be at least 4 characters" }, 400);
+    }
+
     //hash password
-    const hashedPassword = await bcrypt.hash(body.password, 10);
+    const hashedPassword = await bcrypt.hash(password, 10);
 
     // provide defaults for required fields if not present from frontend
     const gender = body.gender || "unspecified";
-    const birthdate = body.birthdate || "1970-01-01";
+    const birthdate = body.birthdate || "0000-00-00";
     const height_cm = body.height_cm ?? 0;
     const weight_kg = body.weight_kg ?? 0;
     const activity_level = body.activity_level || "unknown";
@@ -44,8 +47,8 @@ authRoute.post("/register", async (c) => {
     //insert user into database
     const stmt = db.prepare(`
       INSERT INTO users 
-      (name, email, password_hash, gender, birthdate, height_cm, weight_kg, activity_level, target_weight_kg)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+      (name, email, password_hash, gender, birthdate, height_cm, weight_kg, activity_level, target_weight_kg, created_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
 
     //execute insertion
@@ -58,7 +61,8 @@ authRoute.post("/register", async (c) => {
       height_cm,
       weight_kg,
       activity_level,
-      target_weight_kg
+      target_weight_kg,
+      nowLocalDateTime()
     );
 
     //return success response
@@ -99,18 +103,11 @@ authRoute.post("/login", async (c) => {
       return c.json({ error: "Invalid email or password" }, 401);
     }
     // Use global JWT secret (do not log secret value)
-    const token = jwt.sign(
-      {
-        id: user.id,
-        email: user.email,
-      },
-      JWT_SECRET,
-      { expiresIn: "7d" }
-    );
+    const token = jwt.sign({ id: user.id }, JWT_SECRET!, { expiresIn: "1d" });
 
     return c.json({
       message: "Login success",
-      token,
+      token: token,
       user: {
         id: user.id,
         email: user.email,
@@ -124,17 +121,25 @@ authRoute.post("/login", async (c) => {
 });
 
 
+// Get Current User Info
+authRoute.get("/me", async (c) => {
+  const token = c.req.header("Authorization") || "";
 
-// User Logout
-authRoute.post("/logout", async (c) => {
+  if (!token) {
+    return c.json({ user: null });
+  }
+
   try {
-    // In a stateless JWT
-    return c.json({ message: "Logout successful" });
-  } catch (error) {
-    console.error(error);
-    return c.json({ error: "Internal server error" }, 500);
+    const payload = jwt.verify(token, JWT_SECRET!) as unknown as unknown as { id: number };
+
+    const user = db.prepare(`
+      SELECT id, name, email FROM users WHERE id = ?
+    `).get(payload.id);
+
+    return c.json({ user: user || null });
+  } catch (err) {
+    return c.json({ user: null });
   }
 });
-
 
 export default authRoute;

@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>KIKICAL - Meals</title>
+    <link rel="stylesheet" href="../style/kikical.css" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Nunito:wght@300;400;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+  <body class="kiki-body">
+    <!-- Top Nav bar -->
+    <header class="nav">
+      <div class="nav-container">
+        <a href="dashboard.html" class="nav-left">
+          <div class="logo-icon">
+            <svg
+              width="24"
+              height="24"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <path
+                d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"
+              />
+            </svg>
+          </div>
+          <span class="logo-text">KIKIKAL</span>
+        </a>
+
+        <nav class="nav-center">
+          <a href="dashboard.html" class="nav-item">Dashboard</a>
+          <a href="meals.html" class="nav-item active">Meals</a>
+          <a href="workouts.html" class="nav-item">Workouts</a>
+          <a href="achievements.html" class="nav-item">Achievements</a>
+        </nav>
+
+        <div class="nav-right">
+          <button
+            class="nav-toggle"
+            id="nav-toggle"
+            aria-label="Open menu"
+            aria-expanded="false"
+          >
+            ☰
+          </button>
+          <button class="nav-icon-btn" id="theme-toggle">
+            <svg
+              width="24"
+              height="24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              viewBox="0 0 24 24"
+              id="sun-icon"
+            >
+              <circle cx="12" cy="12" r="5" />
+              <line x1="12" y1="1" x2="12" y2="3" />
+              <line x1="12" y1="21" x2="12" y2="23" />
+              <line x1="4.22" y1="4.22" x2="5.64" y2="5.64" />
+              <line x1="18.36" y1="18.36" x2="19.78" y2="19.78" />
+              <line x1="1" y1="12" x2="3" y2="12" />
+              <line x1="21" y1="12" x2="23" y2="12" />
+              <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" />
+              <line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
+            </svg>
+            <svg
+              width="24"
+              height="24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              viewBox="0 0 24 24"
+              id="moon-icon"
+              style="display: none"
+            >
+              <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+            </svg>
+          </button>
+          <button class="nav-icon-btn" id="settings-btn">
+            <svg
+              width="20"
+              height="20"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              viewBox="0 0 24 24"
+            >
+              <path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z" />
+              <path
+                d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1Z"
+              />
+            </svg>
+          </button>
+          <div class="profile-dropdown">
+            <button class="nav-icon-btn" id="profile-btn">
+              <svg
+                width="24"
+                height="24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                viewBox="0 0 24 24"
+              >
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                <circle cx="12" cy="7" r="4" />
+              </svg>
+            </button>
+            <div class="dropdown-menu" id="profile-menu">
+              <a href="profile.html" class="dropdown-item">
+                <svg
+                  width="18"
+                  height="18"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  viewBox="0 0 24 24"
+                >
+                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                  <circle cx="12" cy="7" r="4" />
+                </svg>
+                Profile
+              </a>
+              <button class="dropdown-item" id="logout-btn">
+                <svg
+                  width="18"
+                  height="18"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  viewBox="0 0 24 24"
+                >
+                  <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+                  <polyline points="16 17 21 12 16 7" />
+                  <line x1="21" y1="12" x2="9" y2="12" />
+                </svg>
+                Logout
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- Mobile/Tablet Navigation Drawer -->
+    <div class="nav-drawer" id="nav-drawer" aria-hidden="true">
+      <div class="drawer-content">
+        <a href="dashboard.html" class="drawer-item">Dashboard</a>
+        <a href="meals.html" class="drawer-item active">Meals</a>
+        <a href="workouts.html" class="drawer-item">Workouts</a>
+        <a href="achievements.html" class="drawer-item">Achievements</a>
+        <a href="profile.html" class="drawer-item">Profile</a>
+        <button class="drawer-item" id="drawer-theme-toggle">Dark Mode</button>
+        <div class="drawer-spacer"></div>
+        <button class="drawer-item" id="drawer-logout">Logout</button>
+      </div>
+      <div class="drawer-backdrop" id="drawer-backdrop"></div>
+    </div>
+
+    <div class="dashboard">
+      <!-- Header Section -->
+      <div class="meals-header-row">
+        <div>
+          <h1 class="page-title">Meal Tracking</h1>
+          <p class="page-subtitle">
+            Today: <span id="today-calories">0</span> calories
+          </p>
+        </div>
+        <div style="display: flex; gap: 8px">
+          <button class="kiki-btn kiki-btn-green" id="btn-open-log-modal">
+            + Log Meal
+          </button>
+        </div>
+      </div>
+
+      <!-- Search Card -->
+      <div class="card search-card">
+        <div class="search-bar-wrapper">
+          <svg
+            class="search-icon"
+            width="20"
+            height="20"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            viewBox="0 0 24 24"
+          >
+            <path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+          </svg>
+          <input
+            type="text"
+            id="food-search-input"
+            class="search-input"
+            placeholder="Search for foods, ingredients, or meals..."
+          />
+        </div>
+
+        <div class="quick-search">
+          <span class="quick-label">☆ Quick Search</span>
+          <div class="quick-tags">
+            <button class="tag-btn" onclick="quickSearch('Chicken Breast')">
+              Chicken Breast
+            </button>
+            <button class="tag-btn" onclick="quickSearch('Brown Rice')">
+              Brown Rice
+            </button>
+            <button class="tag-btn" onclick="quickSearch('Salmon')">
+              Salmon
+            </button>
+            <button class="tag-btn" onclick="quickSearch('Greek Yogurt')">
+              Greek Yogurt
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Meal History -->
+      <h2 class="section-title">Meal History</h2>
+      <div id="meal-history-list" class="meal-list">
+        <!-- Empty State -->
+        <div class="empty-state-card">
+          <p>No meals logged yet. Start by adding your first meal!</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Add Meal Modal -->
+    <div id="log-meal-modal" class="modal-overlay" style="display: none">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3>Add Meal</h3>
+          <button class="close-modal-btn" id="btn-close-modal">&times;</button>
+        </div>
+
+        <div class="modal-body">
+          <!-- Meal Type -->
+          <div class="form-group">
+            <label class="modal-label">Meal Type</label>
+            <select id="modal-meal-type" class="kiki-input">
+              <option value="breakfast">Breakfast</option>
+              <option value="lunch">Lunch</option>
+              <option value="dinner">Dinner</option>
+              <option value="snack">Snack</option>
+            </select>
+          </div>
+
+          <!-- Food Name (Autocomplete/Search result) -->
+          <div class="form-group">
+            <label class="modal-label">Food Name</label>
+            <input
+              type="text"
+              id="modal-food-name"
+              class="kiki-input"
+              placeholder="e.g., Chicken Breast"
+            />
+            <input type="hidden" id="modal-food-id" />
+          </div>
+
+          <!-- Macros Row -->
+          <div class="macros-row">
+            <div class="form-group">
+              <label class="modal-label">Calories (per 100g)</label>
+              <input
+                type="number"
+                id="modal-cal"
+                class="kiki-input"
+                placeholder="0"
+                step="0.1"
+              />
+            </div>
+            <div class="form-group">
+              <label class="modal-label">Protein (g/100g)</label>
+              <input
+                type="number"
+                id="modal-protein"
+                class="kiki-input"
+                placeholder="0"
+                step="0.1"
+              />
+            </div>
+          </div>
+          <div class="macros-row">
+            <div class="form-group">
+              <label class="modal-label">Carbs (g/100g)</label>
+              <input
+                type="number"
+                id="modal-carbs"
+                class="kiki-input"
+                placeholder="0"
+                step="0.1"
+              />
+            </div>
+            <div class="form-group">
+              <label class="modal-label">Fat (g/100g)</label>
+              <input
+                type="number"
+                id="modal-fat"
+                class="kiki-input"
+                placeholder="0"
+                step="0.1"
+              />
+            </div>
+          </div>
+
+          <!-- Portion Size -->
+          <div class="form-group">
+            <label class="modal-label">Portion Size</label>
+            <div class="portion-grid">
+              <button class="portion-btn" data-mult="0.25">¼ serving</button>
+              <button class="portion-btn" data-mult="0.5">½ serving</button>
+              <button class="portion-btn" data-mult="0.75">¾ serving</button>
+              <button class="portion-btn active" data-mult="1">
+                1 serving
+              </button>
+              <button class="portion-btn" data-mult="1.5">1½ servings</button>
+              <button class="portion-btn" data-mult="2">2 servings</button>
+            </div>
+
+            <!-- Custom Amount Slider -->
+            <div class="form-group slider-group">
+              <div class="slider-header">
+                <label class="modal-label">Custom amount</label>
+                <span id="slider-val">1.0x</span>
+              </div>
+              <input
+                type="range"
+                id="portion-slider"
+                min="0.1"
+                max="10"
+                step="0.1"
+                value="1"
+                class="kiki-slider"
+              />
+            </div>
+          </div>
+
+          <!-- Actions -->
+          <div class="modal-actions">
+            <button class="kiki-btn-secondary" id="btn-cancel-modal">
+              Cancel
+            </button>
+            <button class="kiki-btn kiki-btn-green" id="btn-submit-meal">
+              Add Meal
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Delete Confirmation Modal -->
+    <div id="delete-confirm-modal" class="modal-overlay" style="display: none">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3>Delete this meal?</h3>
+          <button class="close-modal-btn" id="btn-close-delete">&times;</button>
+        </div>
+        <div class="modal-body">
+          <p>This action will remove the meal log. Proceed?</p>
+        </div>
+        <div class="modal-actions">
+          <button class="kiki-btn-secondary" id="btn-cancel-delete">
+            Cancel
+          </button>
+          <button class="kiki-btn kiki-btn-green" id="btn-confirm-delete">
+            Delete
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <script src="../javascript/theme.js"></script>
+    <script src="../javascript/logout.js"></script>
+    <script src="../javascript/notifications.js"></script>
+    <script src="../javascript/meals.js"></script>
+  </body>
+</html>
