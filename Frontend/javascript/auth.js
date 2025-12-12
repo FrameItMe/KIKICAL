@@ -106,35 +106,13 @@ async function handleLogin(event) {
       localStorage.setItem("token", data.token);
     }
 
-    // ตรวจ session โดยเรียก /auth/me ด้วย header Authorization
-    try {
-      const token = data.token || localStorage.getItem("token");
-      const meRes = await fetch(`${API_BASE_URL}/me`, {
-        method: "GET",
-        headers: { "Authorization": token },
-      });
-      const meData = await meRes.json();
-
-      if (meRes.ok && meData.user) {
-        if (msgEl) {
-          msgEl.textContent = "เข้าสู่ระบบสำเร็จ!";
-          msgEl.classList.add("success");
-        }
-        setTimeout(() => {
-          window.location.href = "predashboard.html";
-        }, 700);
-      } else {
-        if (msgEl) {
-          msgEl.textContent = "Login succeeded but unable to verify session.";
-          msgEl.classList.add("error");
-        }
-      }
-    } catch (err) {
-      if (msgEl) {
-        msgEl.textContent = "Login succeeded but failed to verify session.";
-        msgEl.classList.add("error");
-      }
+    if (msgEl) {
+      msgEl.textContent = "เข้าสู่ระบบสำเร็จ!";
+      msgEl.classList.add("success");
     }
+    setTimeout(() => {
+      window.location.href = "predashboard.html";
+    }, 700);
 
   } catch (err) {
     if (msgEl) {

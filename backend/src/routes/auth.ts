@@ -121,13 +121,6 @@ authRoute.post("/login", async (c) => {
 });
 
 
-
-// User Logout (client handles localStorage)
-authRoute.post("/logout", (c) => {
-  return c.json({ message: "Logged out" });
-});
-
-
 // Get Current User Info
 authRoute.get("/me", async (c) => {
   const token = c.req.header("Authorization") || "";

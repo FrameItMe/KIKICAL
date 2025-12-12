@@ -7,13 +7,76 @@ let pendingDeleteMealId = null;
 let pendingEditMealId = null;
 let editMealData = null;
 
+function handleUnauthorized(status) {
+  if (status === 401) {
+    localStorage.removeItem("token");
+    window.location.href = "login.html";
+    return true;
+  }
+  return false;
+}
+
 document.addEventListener("DOMContentLoaded", () => {
-  checkAuth();
+  if (!checkAuth()) return; // Stop if not authenticated
+  setupMobileNav(); // Add mobile nav handlers
   setupEventListeners();
   loadDailyMeals();
   startDailyRefresh();
   setupDeleteModal();
 });
+
+// Mobile Navigation Drawer
+function setupMobileNav() {
+  const navToggle = document.getElementById("nav-toggle");
+  const navDrawer = document.getElementById("nav-drawer");
+  const backdrop = document.getElementById("drawer-backdrop");
+
+  function openDrawer() {
+    if (!navDrawer) return;
+    navDrawer.classList.add("open");
+    navDrawer.setAttribute("aria-hidden", "false");
+    navToggle?.setAttribute("aria-expanded", "true");
+    document.body.style.overflow = "hidden";
+  }
+
+  function closeDrawer() {
+    if (!navDrawer) return;
+    navDrawer.classList.remove("open");
+    navDrawer.setAttribute("aria-hidden", "true");
+    navToggle?.setAttribute("aria-expanded", "false");
+    document.body.style.overflow = "";
+  }
+
+  navToggle?.addEventListener("click", () => {
+    if (navDrawer?.classList.contains("open")) {
+      closeDrawer();
+    } else {
+      openDrawer();
+    }
+  });
+
+  backdrop?.addEventListener("click", closeDrawer);
+
+  // Close drawer when clicking nav items (except logout)
+  navDrawer?.querySelectorAll(".drawer-item").forEach((el) => {
+    if (el.id !== "drawer-logout") {
+      el.addEventListener("click", closeDrawer);
+    }
+  });
+
+  // Logout handler
+  const drawerLogout = document.getElementById("drawer-logout");
+  drawerLogout?.addEventListener("click", () => {
+    localStorage.removeItem("token");
+    window.location.href = "login.html";
+  });
+
+  // Drawer Dark Mode toggle
+  const drawerTheme = document.getElementById("drawer-theme-toggle");
+  drawerTheme?.addEventListener("click", () => {
+    document.getElementById("theme-toggle")?.click();
+  });
+}
 
 function getTodayDate() {
   return new Date().toLocaleDateString("sv-SE"); // YYYY-MM-DD in local time
@@ -21,25 +84,31 @@ function getTodayDate() {
 
 function checkAuth() {
   const token = localStorage.getItem("token");
-  if (!token) window.location.href = "login.html";
+  if (!token) {
+    window.location.href = "login.html";
+    return false; // Prevent further execution
+  }
+  return true;
 }
 
 function setupEventListeners() {
   // Search Input (main page)
   const searchInput = document.getElementById("food-search-input");
   let debounceTimer;
-  searchInput.addEventListener("input", (e) => {
-    clearTimeout(debounceTimer);
-    debounceTimer = setTimeout(() => {
-      const query = e.target.value;
-      if (query.length > 1) searchFood(query);
-    }, 500);
-  });
+  if (searchInput) {
+    searchInput.addEventListener("input", (e) => {
+      clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(() => {
+        const query = e.target.value;
+        if (query.length > 1) searchFood(query);
+      }, 500);
+    });
+  }
 
   // Modal Controls
-  document.getElementById("btn-open-log-modal").addEventListener("click", () => openModal());
-  document.getElementById("btn-close-modal").addEventListener("click", closeModal);
-  document.getElementById("btn-cancel-modal").addEventListener("click", closeModal);
+  document.getElementById("btn-open-log-modal")?.addEventListener("click", () => openModal());
+  document.getElementById("btn-close-modal")?.addEventListener("click", closeModal);
+  document.getElementById("btn-cancel-modal")?.addEventListener("click", closeModal);
 
   // Portion Buttons
   document.querySelectorAll(".portion-btn").forEach(btn => {
@@ -51,17 +120,20 @@ function setupEventListeners() {
     });
   });
 
-  // Slider
+  // Slider (bind once)
   const slider = document.getElementById("portion-slider");
-  slider.addEventListener("input", (e) => {
-    const val = parseFloat(e.target.value);
-    document.getElementById("slider-val").textContent = val.toFixed(1) + "x";
-    document.querySelectorAll(".portion-btn").forEach(b => b.classList.remove("active"));
-    updatePortion(val);
-  });
+  if (slider) {
+    slider.addEventListener("input", (e) => {
+      const val = parseFloat(e.target.value);
+      const sliderVal = document.getElementById("slider-val");
+      if (sliderVal) sliderVal.textContent = val.toFixed(2) + "x";
+      document.querySelectorAll(".portion-btn").forEach(b => b.classList.remove("active"));
+      updatePortion(val);
+    });
+  }
 
   // Submit Meal
-  document.getElementById("btn-submit-meal").addEventListener("click", submitMeal);
+  document.getElementById("btn-submit-meal")?.addEventListener("click", submitMeal);
 }
 
 function setupDeleteModal() {
@@ -70,9 +142,9 @@ function setupDeleteModal() {
     pendingDeleteMealId = null;
   };
 
-  document.getElementById("btn-close-delete").addEventListener("click", close);
-  document.getElementById("btn-cancel-delete").addEventListener("click", close);
-  document.getElementById("btn-confirm-delete").addEventListener("click", async () => {
+  document.getElementById("btn-close-delete")?.addEventListener("click", close);
+  document.getElementById("btn-cancel-delete")?.addEventListener("click", close);
+  document.getElementById("btn-confirm-delete")?.addEventListener("click", async () => {
     if (!pendingDeleteMealId) {
       close();
       return;
@@ -90,6 +162,7 @@ async function searchFood(query) {
     const res = await fetch(`${API_BASE}/food/search?q=${query}`, {
       headers: { "Authorization": token }
     });
+    if (handleUnauthorized(res.status)) return;
     const foods = await res.json();
     showSearchResults(foods, query);
   } catch (err) {
@@ -143,8 +216,6 @@ function populateModalWithFood(food) {
   document.getElementById("modal-fat").value = food.fat_per_100g || 0;
   
   selectedPortionMult = 1;
-  document.getElementById("portion-slider").value = 1;
-  document.getElementById("slider-val").textContent = "1.0x";
   document.querySelectorAll(".portion-btn").forEach(b => b.classList.remove("active"));
   const btn1x = document.querySelector("[data-mult='1']");
   if (btn1x) btn1x.classList.add("active");
@@ -167,6 +238,7 @@ async function loadDailyMeals() {
     const res = await fetch(`${API_BASE}/meals/${user.id}?date=${date}`, {
       headers: { "Authorization": token }
     });
+    if (handleUnauthorized(res.status)) return;
     const meals = await res.json();
     renderMealHistory(meals);
     updateSummary(meals);
@@ -181,6 +253,7 @@ async function fetchUser() {
     const res = await fetch(`${API_BASE}/auth/me`, {
       headers: { "Authorization": token }
     });
+    if (handleUnauthorized(res.status)) return null;
     const data = await res.json();
     return data.user;
   } catch (err) {
@@ -224,6 +297,7 @@ async function submitMeal() {
           portion_multiplier: selectedPortionMult
         })
       });
+      if (handleUnauthorized(updateRes.status)) return;
 
       if (updateRes.ok) {
         closeModal();
@@ -259,6 +333,7 @@ async function submitMeal() {
           default_serving_grams: 100
         })
       });
+      if (handleUnauthorized(foodRes.status)) return;
 
       if (!foodRes.ok) {
         const err = await foodRes.json();
@@ -283,6 +358,7 @@ async function submitMeal() {
         portion_multiplier: selectedPortionMult
       })
     });
+    if (handleUnauthorized(mealRes.status)) return;
 
     if (mealRes.ok) {
       closeModal();
@@ -316,7 +392,7 @@ function openModal(food = null) {
   resetMacros();
   selectedPortionMult = 1;
   document.getElementById("portion-slider").value = 1;
-  document.getElementById("slider-val").textContent = "1.0x";
+  document.getElementById("slider-val").textContent = "1.00x";
   document.querySelectorAll(".portion-btn").forEach(b => b.classList.remove("active"));
   const btn1x = document.querySelector("[data-mult='1']");
   if (btn1x) btn1x.classList.add("active");
@@ -331,7 +407,7 @@ function closeModal() {
 function updatePortion(mult) {
   selectedPortionMult = mult;
   document.getElementById("portion-slider").value = mult;
-  document.getElementById("slider-val").textContent = mult.toFixed(1) + "x";
+  document.getElementById("slider-val").textContent = mult.toFixed(2) + "x";
 }
 
 function resetMacros() {
@@ -356,11 +432,31 @@ function renderMealHistory(meals) {
   meals.forEach(meal => {
     const card = document.createElement("div");
     card.className = "meal-item-card";
-    const cals = Math.round((meal.calories_per_100g || 0) * (meal.portion_multiplier || 1));
+    const portion = (meal.portion_multiplier || 1) * 100;
+    const portionMult = meal.portion_multiplier || 1;
+    
+    // Calculate total values based on portion
+    const cals = Math.round((meal.calories_per_100g || 0) * portionMult);
+    const protein = Math.round((meal.protein_per_100g || 0) * portionMult * 10) / 10;
+    const carbs = Math.round((meal.carb_per_100g || 0) * portionMult * 10) / 10;
+    const fat = Math.round((meal.fat_per_100g || 0) * portionMult * 10) / 10;
+    
     card.innerHTML = `
       <div class="meal-info">
-        <div class="meal-name">${meal.food_name}</div>
-        <div class="meal-meta">${meal.meal_type} • ${cals} kcal</div>
+        <div class="meal-name-row">
+          <div class="meal-type-badge">${meal.meal_type}</div>
+          <div class="meal-name">${meal.food_name}</div>
+        </div>
+        <div class="meal-details">
+          <span class="meal-portion">${Math.round(portion)}g</span>
+          <span class="meal-separator">•</span>
+          <span class="meal-calories">${cals} kcal</span>
+        </div>
+        <div class="meal-macros">
+          <span class="macro-item">P: ${protein}g</span>
+          <span class="macro-item">C: ${carbs}g</span>
+          <span class="macro-item">F: ${fat}g</span>
+        </div>
       </div>
       <div class="meal-actions">
         <button class="btn-edit-log" onclick="editMeal(${meal.id})" title="Edit">✎</button>
@@ -379,10 +475,11 @@ async function deleteLog(id) {
 async function performDeleteMeal(id) {
   const token = localStorage.getItem("token");
   try {
-    await fetch(`${API_BASE}/meals/${id}`, {
+    const res = await fetch(`${API_BASE}/meals/${id}`, {
       method: "DELETE",
       headers: { "Authorization": token }
     });
+    if (handleUnauthorized(res.status)) return;
     loadDailyMeals();
   } catch (err) {
     console.error("Delete error:", err);
@@ -420,6 +517,7 @@ async function editMeal(mealId) {
     const res = await fetch(`${API_BASE}/meals/${user.id}?date=${date}`, {
       headers: { "Authorization": token }
     });
+    if (handleUnauthorized(res.status)) return;
     const meals = await res.json();
     const meal = meals.find(m => m.id === mealId);
     

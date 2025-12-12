@@ -2,11 +2,125 @@ const API_BASE = "http://localhost:8000";
 
 let lastLoadedDate = getTodayDate();
 
+const motivationalQuotes = [
+  "You're building a healthier you, keep going! 🌿",
+  "Don't underestimate your progress 🌟",
+  "Your habits today shape your tomorrow 🌞",
+  "Every meal is a new chance to choose better 🥗",
+  "Strength grows in the moments you push through 💪",
+  "You’re closer than you think — keep moving 🚶‍♂️",
+  "Healthy choices add up, one by one ➕",
+  "You’re doing better than you give yourself credit for 💚",
+  "Fuel your body, fuel your mind 🔋",
+  "Your future self is cheering for you 🙌",
+  "Discipline is choosing what you want most 🤝",
+  "You showed up today — that matters 🧡",
+  "Small steps still move you forward 👣",
+  "Your effort is rewriting your story 📘",
+  "Take care of your body — it’s the only place you live 🏡",
+  "Let every day bring you closer to balance ⚖️",
+  "Don't rush — trust your pace 🌀",
+  "A little progress each day becomes big results 📈",
+  "Healthy looks good on you already 😉",
+  "Your consistency is inspiring ✨",
+  "Reset, refocus, restart — you’re allowed to try again 🔄",
+  "You're showing real dedication — keep it up 🏅",
+  "Make yourself proud today 🌠",
+  "Strong body, strong mind 🧠💪",
+  "You’re creating the best version of you 🌸",
+  "Every healthy choice is a victory 🎉",
+  "Your perseverance is powerful 🌬️🔥",
+  "Your goals matter — keep them close ❤️",
+  "You’re doing something amazing for yourself 🌱",
+  "Stay patient — results need time ⏳",
+  "Don’t fear failure, fear giving up 💥",
+  "Your journey is unique — own it 🌈",
+  "Push a little more — you're almost there 🚀",
+  "You're becoming unstoppable 🔥",
+  "Your health journey is worth every effort 🤍",
+  "You showed up for yourself today — that’s huge ⭐",
+  "Healthy energy starts with healthy choices ⚡",
+  "Your commitment is admirable 👏",
+  "You are capable of incredible things 🌟"
+];
+
+function getRandomMotivation() {
+  return motivationalQuotes[Math.floor(Math.random() * motivationalQuotes.length)];
+}
+
+function initializeMotivation() {
+  const motivationP = document.querySelector(".motivation p");
+  if (motivationP) {
+    const today = getTodayDate();
+    const storedData = JSON.parse(localStorage.getItem("dailyMotivation") || "{}");
+    
+    // If it's a new day, get a new quote
+    if (storedData.date !== today) {
+      const newQuote = getRandomMotivation();
+      localStorage.setItem("dailyMotivation", JSON.stringify({
+        date: today,
+        quote: newQuote
+      }));
+      motivationP.textContent = `"${newQuote}"`;
+    } else {
+      // Use the same quote from today
+      motivationP.textContent = `"${storedData.quote}"`;
+    }
+  }
+}
+
 document.addEventListener("DOMContentLoaded", () => {
   checkAuth();
+  initializeMotivation();
   fetchDashboardData();
   setupEventListeners();
   startDailyRefresh();
+
+  // Mobile/Tablet nav toggle
+  const navToggle = document.getElementById("nav-toggle");
+  const navDrawer = document.getElementById("nav-drawer");
+  const backdrop = document.getElementById("drawer-backdrop");
+
+  function openDrawer() {
+    if (!navDrawer) return;
+    navDrawer.classList.add("open");
+    navDrawer.setAttribute("aria-hidden", "false");
+    navToggle?.setAttribute("aria-expanded", "true");
+    document.body.style.overflow = "hidden";
+  }
+
+  function closeDrawer() {
+    if (!navDrawer) return;
+    navDrawer.classList.remove("open");
+    navDrawer.setAttribute("aria-hidden", "true");
+    navToggle?.setAttribute("aria-expanded", "false");
+    document.body.style.overflow = "";
+  }
+
+  navToggle?.addEventListener("click", () => {
+    if (navDrawer?.classList.contains("open")) closeDrawer();
+    else openDrawer();
+  });
+
+  backdrop?.addEventListener("click", closeDrawer);
+  navDrawer?.querySelectorAll(".drawer-item").forEach(el => {
+    if (el.id !== "drawer-logout") {
+      el.addEventListener("click", closeDrawer);
+    }
+  });
+
+  // Drawer logout handler
+  const drawerLogout = document.getElementById("drawer-logout");
+  drawerLogout?.addEventListener("click", () => {
+    localStorage.removeItem("token");
+    window.location.href = "login.html";
+  });
+
+  // Drawer Dark Mode toggle
+  const drawerTheme = document.getElementById("drawer-theme-toggle");
+  drawerTheme?.addEventListener("click", () => {
+    document.getElementById("theme-toggle")?.click();
+  });
 });
 
 function getTodayDate() {
@@ -21,10 +135,10 @@ function checkAuth() {
 }
 
 function setupEventListeners() {
-  // Logout
-  
   const btnLogMeal = document.getElementById("btn-log-meal");
   const btnLogWorkout = document.getElementById("btn-log-workout");
+  const editProfileBtn = document.getElementById("edit-profile-btn");
+  const settingsBtn = document.getElementById("settings-btn");
 
   if (btnLogMeal) {
     btnLogMeal.addEventListener("click", () => {
@@ -35,6 +149,18 @@ function setupEventListeners() {
   if (btnLogWorkout) {
     btnLogWorkout.addEventListener("click", () => {
       window.location.href = "workouts.html";
+    });
+  }
+
+  if (editProfileBtn) {
+    editProfileBtn.addEventListener("click", () => {
+      window.location.href = "profile.html";
+    });
+  }
+
+  if (settingsBtn) {
+    settingsBtn.addEventListener("click", () => {
+      window.location.href = "profile.html";
     });
   }
 }
@@ -85,9 +211,9 @@ function updateUI(data) {
   setText("val-remaining", Math.round(remaining));
 
   // Update Macros
-  setText("macro-p", `${Math.round(consumed.protein)}g / ${Math.round(targets.protein)}g Protein`);
-  setText("macro-c", `${Math.round(consumed.carbs)}g / ${Math.round(targets.carbs)}g Carbs`);
-  setText("macro-f", `${Math.round(consumed.fat)}g / ${Math.round(targets.fat)}g Fat`);
+  setText("macro-p", `${Math.round(consumed.protein)}g / ${Math.round(targets.protein)}g`);
+  setText("macro-c", `${Math.round(consumed.carbs)}g / ${Math.round(targets.carbs)}g`);
+  setText("macro-f", `${Math.round(consumed.fat)}g / ${Math.round(targets.fat)}g`);
 
   // Insights cards
   const insights = data.insights || {};
@@ -146,9 +272,9 @@ function formatNumber(num) {
 
 function getGreeting() {
   const hour = new Date().getHours();
-  if (hour < 12) return "Good morning";
-  if (hour < 18) return "Good afternoon";
-  return "Good evening";
+  if (hour < 12) return "Good Morning";
+  if (hour < 18) return "Good Afternoon";
+  return "Good Evening";
 }
 
 function startDailyRefresh() {

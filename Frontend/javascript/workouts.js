@@ -5,13 +5,76 @@ let pendingDeleteWorkoutId = null;
 let pendingEditWorkoutId = null;
 let editWorkoutData = null;
 
+function handleUnauthorized(status) {
+  if (status === 401) {
+    localStorage.removeItem("token");
+    window.location.href = "login.html";
+    return true;
+  }
+  return false;
+}
+
 document.addEventListener("DOMContentLoaded", () => {
-  checkAuth();
+  if (!checkAuth()) return; // Stop if not authenticated
+  setupMobileNav(); // Add mobile nav handlers
   setupEventListeners();
   loadDailyWorkouts();
   startDailyRefresh();
   setupDeleteModal();
 });
+
+// Mobile Navigation Drawer
+function setupMobileNav() {
+  const navToggle = document.getElementById("nav-toggle");
+  const navDrawer = document.getElementById("nav-drawer");
+  const backdrop = document.getElementById("drawer-backdrop");
+
+  function openDrawer() {
+    if (!navDrawer) return;
+    navDrawer.classList.add("open");
+    navDrawer.setAttribute("aria-hidden", "false");
+    navToggle?.setAttribute("aria-expanded", "true");
+    document.body.style.overflow = "hidden";
+  }
+
+  function closeDrawer() {
+    if (!navDrawer) return;
+    navDrawer.classList.remove("open");
+    navDrawer.setAttribute("aria-hidden", "true");
+    navToggle?.setAttribute("aria-expanded", "false");
+    document.body.style.overflow = "";
+  }
+
+  navToggle?.addEventListener("click", () => {
+    if (navDrawer?.classList.contains("open")) {
+      closeDrawer();
+    } else {
+      openDrawer();
+    }
+  });
+
+  backdrop?.addEventListener("click", closeDrawer);
+
+  // Close drawer when clicking nav items (except logout)
+  navDrawer?.querySelectorAll(".drawer-item").forEach((el) => {
+    if (el.id !== "drawer-logout") {
+      el.addEventListener("click", closeDrawer);
+    }
+  });
+
+  // Logout handler
+  const drawerLogout = document.getElementById("drawer-logout");
+  drawerLogout?.addEventListener("click", () => {
+    localStorage.removeItem("token");
+    window.location.href = "login.html";
+  });
+
+  // Drawer Dark Mode toggle
+  const drawerTheme = document.getElementById("drawer-theme-toggle");
+  drawerTheme?.addEventListener("click", () => {
+    document.getElementById("theme-toggle")?.click();
+  });
+}
 
 function getTodayDate() {
   return new Date().toLocaleDateString("sv-SE"); // YYYY-MM-DD in local time
@@ -19,14 +82,18 @@ function getTodayDate() {
 
 function checkAuth() {
   const token = localStorage.getItem("token");
-  if (!token) window.location.href = "login.html";
+  if (!token) {
+    window.location.href = "login.html";
+    return false; // Prevent further execution
+  }
+  return true;
 }
 
 function setupEventListeners() {
-  document.getElementById("btn-log-workout").addEventListener("click", openModal);
-  document.getElementById("btn-close-modal").addEventListener("click", closeModal);
-  document.getElementById("btn-cancel-modal").addEventListener("click", closeModal);
-  document.getElementById("btn-submit-workout").addEventListener("click", submitWorkout);
+  document.getElementById("btn-log-workout")?.addEventListener("click", () => openModal());
+  document.getElementById("btn-close-modal")?.addEventListener("click", closeModal);
+  document.getElementById("btn-cancel-modal")?.addEventListener("click", closeModal);
+  document.getElementById("btn-submit-workout")?.addEventListener("click", submitWorkout);
 }
 
 function setupDeleteModal() {
@@ -35,9 +102,9 @@ function setupDeleteModal() {
     pendingDeleteWorkoutId = null;
   };
 
-  document.getElementById("btn-close-delete-workout").addEventListener("click", close);
-  document.getElementById("btn-cancel-delete-workout").addEventListener("click", close);
-  document.getElementById("btn-confirm-delete-workout").addEventListener("click", async () => {
+  document.getElementById("btn-close-delete-workout")?.addEventListener("click", close);
+  document.getElementById("btn-cancel-delete-workout")?.addEventListener("click", close);
+  document.getElementById("btn-confirm-delete-workout")?.addEventListener("click", async () => {
     if (!pendingDeleteWorkoutId) {
       close();
       return;
@@ -57,6 +124,8 @@ async function loadDailyWorkouts() {
     const res = await fetch(`${API_BASE}/workouts?date=${date}`, {
       headers: { "Authorization": token }
     });
+
+    if (handleUnauthorized(res.status)) return;
 
     if (!res.ok) {
       console.error("Failed to load workouts");
@@ -99,6 +168,8 @@ async function submitWorkout() {
         })
       });
 
+        if (handleUnauthorized(updateRes.status)) return;
+
       if (updateRes.ok) {
         closeModal();
         pendingEditWorkoutId = null;
@@ -124,6 +195,8 @@ async function submitWorkout() {
         duration_minutes: duration
       })
     });
+
+    if (handleUnauthorized(res.status)) return;
 
     if (res.ok) {
       closeModal();
@@ -155,10 +228,11 @@ async function deleteWorkout(id) {
 async function performDeleteWorkout(id) {
   const token = localStorage.getItem("token");
   try {
-    await fetch(`${API_BASE}/workouts/${id}`, {
+    const res = await fetch(`${API_BASE}/workouts/${id}`, {
       method: "DELETE",
       headers: { "Authorization": token }
     });
+    if (handleUnauthorized(res.status)) return;
     loadDailyWorkouts();
   } catch (err) {
     console.error("Delete error:", err);
@@ -166,21 +240,18 @@ async function performDeleteWorkout(id) {
 }
 
 function quickLog(name, calories, duration) {
-  document.getElementById("workout-name").value = name;
-  document.getElementById("workout-calories").value = calories;
-  document.getElementById("workout-duration").value = duration;
-  openModal();
+  openModal(name, calories, duration);
 }
 
 // ================= UI UPDATES =================
 
-function openModal() {
+function openModal(name = "", calories = "", duration = "") {
   const modal = document.getElementById("log-workout-modal");
   modal.style.display = "flex";
   
-  document.getElementById("workout-name").value = "";
-  document.getElementById("workout-calories").value = "";
-  document.getElementById("workout-duration").value = "";
+  document.getElementById("workout-name").value = name;
+  document.getElementById("workout-calories").value = calories;
+  document.getElementById("workout-duration").value = duration;
 }
 
 function closeModal() {
@@ -249,6 +320,7 @@ async function editWorkout(workoutId) {
       headers: { "Authorization": token }
     });
 
+    if (handleUnauthorized(res.status)) return;
     if (!res.ok) throw new Error("Failed to fetch workouts");
     
     const workouts = await res.json();

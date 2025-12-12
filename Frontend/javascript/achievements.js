@@ -3,16 +3,72 @@ const API_BASE = "http://localhost:8000";
 let currentTab = "badges";
 
 document.addEventListener("DOMContentLoaded", () => {
-  checkAuth();
+  if (!checkAuth()) return; // Stop if not authenticated
+  setupMobileNav(); // Add mobile nav handlers
   loadAchievements();
   setupTabs();
 });
+
+// Mobile Navigation Drawer
+function setupMobileNav() {
+  const navToggle = document.getElementById("nav-toggle");
+  const navDrawer = document.getElementById("nav-drawer");
+  const backdrop = document.getElementById("drawer-backdrop");
+
+  function openDrawer() {
+    if (!navDrawer) return;
+    navDrawer.classList.add("open");
+    navDrawer.setAttribute("aria-hidden", "false");
+    navToggle?.setAttribute("aria-expanded", "true");
+    document.body.style.overflow = "hidden";
+  }
+
+  function closeDrawer() {
+    if (!navDrawer) return;
+    navDrawer.classList.remove("open");
+    navDrawer.setAttribute("aria-hidden", "true");
+    navToggle?.setAttribute("aria-expanded", "false");
+    document.body.style.overflow = "";
+  }
+
+  navToggle?.addEventListener("click", () => {
+    if (navDrawer?.classList.contains("open")) {
+      closeDrawer();
+    } else {
+      openDrawer();
+    }
+  });
+
+  backdrop?.addEventListener("click", closeDrawer);
+
+  // Close drawer when clicking nav items (except logout)
+  navDrawer?.querySelectorAll(".drawer-item").forEach((el) => {
+    if (el.id !== "drawer-logout") {
+      el.addEventListener("click", closeDrawer);
+    }
+  });
+
+  // Logout handler
+  const drawerLogout = document.getElementById("drawer-logout");
+  drawerLogout?.addEventListener("click", () => {
+    localStorage.removeItem("token");
+    window.location.href = "login.html";
+  });
+
+  // Drawer Dark Mode toggle
+  const drawerTheme = document.getElementById("drawer-theme-toggle");
+  drawerTheme?.addEventListener("click", () => {
+    document.getElementById("theme-toggle")?.click();
+  });
+}
 
 function checkAuth() {
   const token = localStorage.getItem("token");
   if (!token) {
     window.location.href = "login.html";
+    return false; // Prevent further execution
   }
+  return true;
 }
 
 function setupTabs() {
@@ -49,6 +105,12 @@ async function loadAchievements() {
     const res = await fetch(`${API_BASE}/achievements`, {
       headers: { Authorization: token },
     });
+
+    if (res.status === 401) {
+      localStorage.removeItem("token");
+      window.location.href = "login.html";
+      return;
+    }
 
     if (!res.ok) {
       badgeEmpty.style.display = "block";

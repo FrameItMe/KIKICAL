@@ -1,10 +1,5 @@
 import 'dotenv/config';
 
-/**
- * Application Configuration
- * Loads environment variables and validates required settings
- */
-
 const SECRET = process.env.JWT_SECRET || process.env.jwt_secret;
 
 if (!SECRET) {

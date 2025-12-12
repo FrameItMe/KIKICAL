@@ -14,6 +14,15 @@ const setupData = {
   target_weight_kg: null,
 };
 
+function handleUnauthorized(status) {
+  if (status === 401) {
+    localStorage.removeItem("token");
+    window.location.href = "login.html";
+    return true;
+  }
+  return false;
+}
+
 // ---------- Helpers ----------
 function showSection(pre) {
   const preSec = document.getElementById("pre-dashboard");
@@ -31,6 +40,11 @@ function renderStep() {
   document.querySelectorAll(".setup-step").forEach((stepEl) => {
     const stepNum = Number(stepEl.dataset.step);
     stepEl.style.display = stepNum === currentStep ? "block" : "none";
+  });
+  
+  // Enable/disable all Previous buttons
+  document.querySelectorAll(".setup-step .kiki-btn-secondary").forEach((btn) => {
+    btn.disabled = (currentStep === 1);
   });
 
   // progress text
@@ -67,6 +81,7 @@ function goNextStep() {
 }
 
 function goPrevStep() {
+  // console.log('goPrevStep called, currentStep:', currentStep);
   if (currentStep > 1) {
     currentStep--;
     renderStep();
@@ -301,6 +316,7 @@ async function initPredashboard() {
   try {
     // Get user info
     const res = await fetch(`${API_BASE_URL}/auth/me`, { headers: { Authorization: token } });
+    if (handleUnauthorized(res.status)) return;
     if (res.ok) {
       const data = await res.json();
       const greetEl = document.getElementById("greeting-text");
@@ -313,6 +329,7 @@ async function initPredashboard() {
   // Check setup status
   try {
     const res2 = await fetch(`${API_BASE_URL}/user/setup-status`, { headers: { Authorization: token } });
+    if (handleUnauthorized(res2.status)) return;
     if (res2.ok) {
       const data2 = await res2.json();
       if (!data2.need_setup) {
@@ -329,5 +346,7 @@ async function initPredashboard() {
 }
 
 document.addEventListener("DOMContentLoaded", () => {
+  console.log('predashboard.js loaded');
+  console.log('goPrevStep function:', typeof goPrevStep);
   initPredashboard();
 });
