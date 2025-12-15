@@ -9,7 +9,8 @@ import { calculateMealStreak } from "../utils/achievements.js";
 const userRoute = new Hono();
 
 userRoute.get("/setup-status", async (c) => {
-  const token = c.req.header("Authorization") || "";
+  const authHeader = c.req.header("Authorization") || "";
+  const token = authHeader.startsWith("Bearer ") ? authHeader.slice(7) : authHeader;
   if (!token) return c.json({ need_setup: true });
 
   try {
@@ -29,7 +30,9 @@ userRoute.get("/setup-status", async (c) => {
 
 
 userRoute.post("/setup", async (c) => {
-  const token = c.req.header("Authorization") || "";
+  const authHeader = c.req.header("Authorization") || "";
+  const token = authHeader.startsWith("Bearer ") ? authHeader.slice(7) : authHeader;
+  
   let payload: { id: number } | null = null;
   if (!token) {
     return c.json({ error: "Not authenticated" }, 401);

@@ -33,7 +33,9 @@ const achievementsRoute = new Hono<{ Variables: Variables }>();
 
 // Auth middleware
 achievementsRoute.use("*", async (c, next) => {
-  const token = c.req.header("Authorization") || "";
+  const authHeader = c.req.header("Authorization") || "";
+  // Support both "Bearer token" and plain "token"
+  const token = authHeader.startsWith("Bearer ") ? authHeader.slice(7) : authHeader;
   if (!token) return c.json({ error: "Not authenticated" }, 401);
 
   try {
