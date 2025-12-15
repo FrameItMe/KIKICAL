@@ -163,10 +163,22 @@ async function searchFood(query) {
       headers: { "Authorization": token }
     });
     if (handleUnauthorized(res.status)) return;
+    
+    // Check if response is valid JSON before parsing
+    const contentType = res.headers.get("content-type");
+    if (!contentType || !contentType.includes("application/json")) {
+      console.error("Invalid response type:", contentType);
+      const text = await res.text();
+      console.error("Response body:", text);
+      showSearchResults([], query);
+      return;
+    }
+    
     const foods = await res.json();
     showSearchResults(foods, query);
   } catch (err) {
     console.error("Search error:", err);
+    showSearchResults([], query);
   }
 }
 
@@ -239,6 +251,12 @@ async function loadDailyMeals() {
       headers: { "Authorization": token }
     });
     if (handleUnauthorized(res.status)) return;
+    
+    if (!res.ok) {
+      console.error("Failed to load meals:", res.status);
+      return;
+    }
+    
     const meals = await res.json();
     renderMealHistory(meals);
     updateSummary(meals);
@@ -305,8 +323,14 @@ async function submitMeal() {
         editMealData = null;
         loadDailyMeals();
       } else {
-        const err = await updateRes.json();
-        alert("Failed to update meal: " + (err.error || "Unknown error"));
+        const text = await updateRes.text();
+        console.error("Meal update failed:", text);
+        try {
+          const err = JSON.parse(text);
+          alert("Failed to update meal: " + (err.error || "Unknown error"));
+        } catch {
+          alert("Failed to update meal: " + text);
+        }
       }
       return;
     }
@@ -336,8 +360,14 @@ async function submitMeal() {
       if (handleUnauthorized(foodRes.status)) return;
 
       if (!foodRes.ok) {
-        const err = await foodRes.json();
-        alert("Failed to create food: " + (err.error || "Unknown error"));
+        const text = await foodRes.text();
+        console.error("Food creation failed:", text);
+        try {
+          const err = JSON.parse(text);
+          alert("Failed to create food: " + (err.error || "Unknown error"));
+        } catch {
+          alert("Failed to create food: " + text);
+        }
         return;
       }
 
@@ -373,12 +403,18 @@ async function submitMeal() {
       
       loadDailyMeals();
     } else {
-      const err = await mealRes.json();
-      alert("Failed to log meal: " + (err.error || "Unknown error"));
+      const text = await mealRes.text();
+      console.error("Meal creation failed:", text);
+      try {
+        const err = JSON.parse(text);
+        alert("Failed to log meal: " + (err.error || "Unknown error"));
+      } catch {
+        alert("Failed to log meal: " + text);
+      }
     }
   } catch (err) {
     console.error("Submit error:", err);
-    alert("Error: " + err.message);
+    alert("Error: " + (err instanceof Error ? err.message : String(err)));
   }
 }
 
