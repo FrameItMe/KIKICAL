@@ -1,7 +1,7 @@
-import { db } from "../database/db.js";
+import { get, run } from "../database/db.js";
 
 // Common Thai daily foods with macros per 100g (approximate)
-const foods = [
+const foods: Array<{ name: string; category: string; calories: number; protein: number; carb: number; fat: number }> = [
   { name: "ข้าวหอมมะลิ", category: "Rice", calories: 130, protein: 2.7, carb: 28, fat: 0.3 },
   { name: "ข้าวกล้อง", category: "Rice", calories: 111, protein: 2.6, carb: 23, fat: 0.9 },
   { name: "ข้าวเหนียว", category: "Rice", calories: 169, protein: 3.5, carb: 37, fat: 0.3 },
@@ -24,24 +24,33 @@ const foods = [
   { name: "นมสด", category: "Drink", calories: 61, protein: 3.2, carb: 4.8, fat: 3.3 }
 ];
 
-function seedFood() {
-  const insert = db.prepare(`
-    INSERT INTO food
-      (name, category, calories_per_100g, protein_per_100g, carb_per_100g, fat_per_100g, default_serving_grams, created_by_user)
-    VALUES (?, ?, ?, ?, ?, ?, 100, NULL)
-  `);
-
-  const select = db.prepare("SELECT id FROM food WHERE LOWER(name) = LOWER(?)");
-
-  let inserted = 0;
-  foods.forEach(f => {
-    const exists = select.get(f.name) as { id: number } | undefined;
-    if (exists) return;
-    insert.run(f.name, f.category, f.calories, f.protein, f.carb, f.fat);
-    inserted++;
-  });
-
-  console.log(`Seed completed. Inserted ${inserted} foods.`);
+async function seedFood() {
+  try {
+    let inserted = 0;
+    
+    for (const f of foods) {
+      const exists = await get<{ id: number }>(
+        "SELECT id FROM food WHERE LOWER(name) = LOWER(?)",
+        [f.name]
+      );
+      
+      if (exists) continue;
+      
+      await run(
+        `INSERT INTO food
+          (name, category, calories_per_100g, protein_per_100g, carb_per_100g, fat_per_100g, default_serving_grams, created_by_user)
+         VALUES (?, ?, ?, ?, ?, ?, 100, NULL)`,
+        [f.name, f.category, f.calories, f.protein, f.carb, f.fat]
+      );
+      inserted++;
+    }
+    
+    console.log(`✅ Seed completed. Inserted ${inserted} foods.`);
+    process.exit(0);
+  } catch (error) {
+    console.error('❌ Seed failed:', error);
+    process.exit(1);
+  }
 }
 
 seedFood();

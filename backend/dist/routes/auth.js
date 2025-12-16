@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import { db } from "../database/db.js";
+import { get, run } from "../database/db.js";
 import { nowLocalDateTime } from "../utils/dateTime.js";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
@@ -13,9 +13,7 @@ authRoute.post("/register", async (c) => {
         const name = (body.name || "").trim();
         const email = (body.email || "").trim().toLowerCase();
         //check email duplication (case-insensitive)
-        const check = db
-            .prepare("SELECT id FROM users WHERE LOWER(email) = ?")
-            .get(email);
+        const check = await get("SELECT id FROM users WHERE LOWER(email) = ?", [email]);
         if (check) {
             return c.json({ error: "Email already exists" }, 400);
         }
@@ -31,23 +29,30 @@ authRoute.post("/register", async (c) => {
         const hashedPassword = await bcrypt.hash(password, 10);
         // provide defaults for required fields if not present from frontend
         const gender = body.gender || "unspecified";
-        const birthdate = body.birthdate || "0000-00-00";
+        const birthdate = body.birthdate || null;
         const height_cm = body.height_cm ?? 0;
         const weight_kg = body.weight_kg ?? 0;
         const activity_level = body.activity_level || "unknown";
         const target_weight_kg = body.target_weight_kg ?? null;
-        //insert user into database
-        const stmt = db.prepare(`
-      INSERT INTO users 
-      (name, email, password_hash, gender, birthdate, height_cm, weight_kg, activity_level, target_weight_kg, created_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `);
         //execute insertion
-        const result = stmt.run(name, email, hashedPassword, gender, birthdate, height_cm, weight_kg, activity_level, target_weight_kg, nowLocalDateTime());
+        const result = await run(`INSERT INTO users 
+       (name, email, password_hash, gender, birthdate, height_cm, weight_kg, activity_level, target_weight_kg, created_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`, [
+            name,
+            email,
+            hashedPassword,
+            gender,
+            birthdate,
+            height_cm,
+            weight_kg,
+            activity_level,
+            target_weight_kg,
+            nowLocalDateTime()
+        ]);
         //return success response
         return c.json({
             message: "User registered",
-            user_id: result.lastInsertRowid,
+            user_id: result.insertId,
         });
     }
     catch (error) {
@@ -65,9 +70,7 @@ authRoute.post("/login", async (c) => {
         if (!email || !password) {
             return c.json({ error: "Email and password are required" }, 400);
         }
-        const user = db
-            .prepare("SELECT id, email, password_hash FROM users WHERE LOWER(email) = ?")
-            .get(email);
+        const user = await get("SELECT id, email, password_hash FROM users WHERE LOWER(email) = ?", [email]);
         if (!user) {
             return c.json({ error: "Invalid email or password" }, 401);
         }
@@ -91,10 +94,6 @@ authRoute.post("/login", async (c) => {
         return c.json({ error: "Internal server error" }, 500);
     }
 });
-// User Logout (client handles localStorage)
-authRoute.post("/logout", (c) => {
-    return c.json({ message: "Logged out" });
-});
 // Get Current User Info
 authRoute.get("/me", async (c) => {
     const token = c.req.header("Authorization") || "";
@@ -103,9 +102,9 @@ authRoute.get("/me", async (c) => {
     }
     try {
         const payload = jwt.verify(token, JWT_SECRET);
-        const user = db.prepare(`
+        const user = await get(`
       SELECT id, name, email FROM users WHERE id = ?
-    `).get(payload.id);
+    `, [payload.id]);
         return c.json({ user: user || null });
     }
     catch (err) {

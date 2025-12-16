@@ -7,6 +7,7 @@ import foodRoute from './routes/food.js'
 import mealRoute from './routes/meals.js'
 import workoutRoute from './routes/workouts.js'
 import achievementsRoute from './routes/achievements.js'
+import { initDB } from './database/db.js'
 
 const app = new Hono()
 
@@ -27,9 +28,17 @@ app.route('/meals', mealRoute)
 app.route('/workouts', workoutRoute)
 app.route('/achievements', achievementsRoute)
 
-serve({
-  fetch: app.fetch,
-  port: 8000
-}, (info) => {
-  console.log(`Server is running on http://localhost:${info.port}`)
+async function bootstrap() {
+  await initDB();
+  serve({
+    fetch: app.fetch,
+    port: 8000
+  }, (info) => {
+    console.log(`Server is running on http://localhost:${info.port}`)
+  })
+}
+
+bootstrap().catch((err) => {
+  console.error('Failed to start server:', err)
+  process.exit(1)
 })

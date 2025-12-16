@@ -1041,33 +1041,34 @@ button.drawer-item:focus-visible { outline: 2px solid var(--border-color); }
   align-items: center;
   gap: 8px;
   min-width: 230px;
-  margin-top: -30px;
 }
 
 .circle {
   width: 230px;
   height: 230px;
   border-radius: 50%;
-  background: conic-gradient(#2ecc71 0%, #eee 0%);
+  background: conic-gradient(from 90deg at 50% 50%, #10b981 0deg, #f3f4f6 0deg);
   display: flex;
   justify-content: center;
   align-items: center;
   position: relative;
+  transform: rotate(-90deg);
 }
 .circle::before {
   content: "";
-  width: 200px;
-  height: 200px;
+  width: 170px;
+  height: 170px;
   background: var(--bg-card);
   border-radius: 50%;
   position: absolute;
 }
 .circle-inner-text {
   position: relative;
-  z-index: 2;
+  z-index: 10;
   font-size: 48px;
   font-weight: 800;
   color: var(--text-primary);
+  transform: rotate(90deg);
 }
 
 .circle-caption {
@@ -2390,7 +2391,7 @@ body.dark-mode .progress-bar {
 .modal-actions {
   display: flex;
   gap: 12px;
-  margin-top: 24px;
+  margin: 0 10px 20px;
 }
 
 .modal-actions button {
@@ -2951,4 +2952,5 @@ body.dark-mode #profile-message.error {
 body.dark-mode .quick-search {
   border-top-color: #444444;
 }
+
 

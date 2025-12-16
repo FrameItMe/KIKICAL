@@ -119,6 +119,7 @@ function setupDeleteModal() {
 async function loadDailyWorkouts() {
   const token = localStorage.getItem("token");
   const date = activeDate || getTodayDate();
+  console.log("[loadDailyWorkouts] Loading workouts for date:", date);
 
   try {
     const res = await fetch(`${API_BASE}/workouts?date=${date}`, {
@@ -133,6 +134,7 @@ async function loadDailyWorkouts() {
     }
 
     const workouts = await res.json();
+    console.log("[loadDailyWorkouts] API Response:", workouts);
     renderWorkoutHistory(workouts);
     updateSummary(workouts);
   } catch (err) {
@@ -155,6 +157,7 @@ async function submitWorkout() {
   try {
     // ถ้า edit mode
     if (pendingEditWorkoutId) {
+      console.log("[submitWorkout] Edit mode - updating workout:", pendingEditWorkoutId);
       const updateRes = await fetch(`${API_BASE}/workouts/${pendingEditWorkoutId}`, {
         method: "PUT",
         headers: {
@@ -171,12 +174,14 @@ async function submitWorkout() {
         if (handleUnauthorized(updateRes.status)) return;
 
       if (updateRes.ok) {
+        console.log("[submitWorkout] Workout updated successfully");
         closeModal();
         pendingEditWorkoutId = null;
         editWorkoutData = null;
         loadDailyWorkouts();
       } else {
         const err = await updateRes.json();
+        console.error("[submitWorkout] Update failed:", err);
         alert("Failed to update workout: " + (err.error || "Unknown error"));
       }
       return;
@@ -249,9 +254,22 @@ function openModal(name = "", calories = "", duration = "") {
   const modal = document.getElementById("log-workout-modal");
   modal.style.display = "flex";
   
-  document.getElementById("workout-name").value = name;
-  document.getElementById("workout-calories").value = calories;
-  document.getElementById("workout-duration").value = duration;
+  // Reset to "Log Workout" mode (unless editWorkout() has set pendingEditWorkoutId)
+  if (!pendingEditWorkoutId) {
+    const modalTitle = document.querySelector(".modal-header h3");
+    if (modalTitle) {
+      modalTitle.textContent = "Log Workout";
+    }
+    const submitBtn = document.getElementById("btn-submit-workout");
+    if (submitBtn) {
+      submitBtn.textContent = "Log Workout";
+    }
+    
+    // Only clear fields if NOT in edit mode
+    document.getElementById("workout-name").value = name;
+    document.getElementById("workout-calories").value = calories;
+    document.getElementById("workout-duration").value = duration;
+  }
 }
 
 function closeModal() {
@@ -290,10 +308,25 @@ function renderWorkoutHistory(workouts) {
 }
 
 function updateSummary(workouts) {
-  const totalBurned = workouts.reduce((sum, w) => sum + (w.calories_burned || 0), 0);
-  const totalDuration = workouts.reduce((sum, w) => sum + (w.duration_minutes || 0), 0);
-  const count = workouts.length;
+  console.log("[updateSummary] Workouts data:", workouts);
+  
+  let totalBurned = 0;
+  let totalDuration = 0;
+  
+  if (Array.isArray(workouts) && workouts.length > 0) {
+    totalBurned = workouts.reduce((sum, w) => {
+      const calories = parseFloat(w.calories_burned) || 0;
+      console.log(`[updateSummary] Workout: ${w.name}, Calories: ${calories}`);
+      return sum + calories;
+    }, 0);
+    
+    totalDuration = workouts.reduce((sum, w) => sum + (parseInt(w.duration_minutes) || 0), 0);
+  }
+  
+  const count = Array.isArray(workouts) ? workouts.length : 0;
 
+  console.log(`[updateSummary] Total Burned: ${totalBurned}, Count: ${count}, Duration: ${totalDuration}`);
+  
   document.getElementById("total-burned").textContent = Math.round(totalBurned);
   const cardBurned = document.getElementById("total-burned-card");
   if (cardBurned) cardBurned.textContent = Math.round(totalBurned);
@@ -315,35 +348,47 @@ async function editWorkout(workoutId) {
   const token = localStorage.getItem("token");
 
   try {
-    // Fetch current workouts for today
-    const res = await fetch(`${API_BASE}/workouts?date=${activeDate}`, {
+    console.log("[editWorkout] Loading workout:", workoutId);
+    
+    // Fetch single workout by id to avoid date-mismatch issues
+    const res = await fetch(`${API_BASE}/workouts/${workoutId}`, {
       headers: { "Authorization": token }
     });
 
     if (handleUnauthorized(res.status)) return;
-    if (!res.ok) throw new Error("Failed to fetch workouts");
-    
-    const workouts = await res.json();
-    const workout = workouts.find(w => w.id === workoutId);
-
-    if (!workout) {
-      alert("Workout not found");
-      return;
+    if (!res.ok) {
+      const text = await res.text();
+      console.error("Edit workout fetch failed:", res.status, text);
+      throw new Error("Failed to fetch workout");
     }
+    
+    const workout = await res.json();
+    console.log("[editWorkout] Data received:", workout);
 
     // Load values into modal
-    document.getElementById("workout-name").value = workout.name;
-    document.getElementById("workout-calories").value = workout.calories_burned;
-    document.getElementById("workout-duration").value = workout.duration_minutes;
+    document.getElementById("workout-name").value = workout.name || "";
+    document.getElementById("workout-calories").value = workout.calories_burned || "";
+    document.getElementById("workout-duration").value = workout.duration_minutes || "";
+
+    // Update modal title and button
+    const modalTitle = document.querySelector(".modal-header h3");
+    if (modalTitle) {
+      modalTitle.textContent = "Edit Workout";
+    }
+    const submitBtn = document.getElementById("btn-submit-workout");
+    if (submitBtn) {
+      submitBtn.textContent = "Update Workout";
+    }
 
     // Set edit mode
     pendingEditWorkoutId = workoutId;
     editWorkoutData = workout;
 
+    console.log("[editWorkout] Modal opened in edit mode");
     openModal();
   } catch (err) {
     console.error("Edit workout error:", err);
-    alert("Error: " + err.message);
+    alert("Error loading workout: " + err.message);
   }
 }
 

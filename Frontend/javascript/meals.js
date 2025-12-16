@@ -98,10 +98,20 @@ function setupEventListeners() {
   if (searchInput) {
     searchInput.addEventListener("input", (e) => {
       clearTimeout(debounceTimer);
-      debounceTimer = setTimeout(() => {
-        const query = e.target.value;
-        if (query.length > 1) searchFood(query);
-      }, 500);
+      const query = e.target.value.trim();
+      
+      // ถ้าลบคำค้นหาให้ซ่อน dropdown
+      if (!query) {
+        const list = document.getElementById("search-results-list");
+        if (list) list.innerHTML = "";
+        return;
+      }
+      
+      if (query.length > 1) {
+        debounceTimer = setTimeout(() => {
+          searchFood(query);
+        }, 500);
+      }
     });
   }
 
@@ -245,6 +255,7 @@ async function loadDailyMeals() {
   if (!user) return;
 
   const date = activeDate || getTodayDate();
+  console.log("[loadDailyMeals] Loading meals for user:", user.id, "date:", date);
 
   try {
     const res = await fetch(`${API_BASE}/meals/${user.id}?date=${date}`, {
@@ -258,6 +269,7 @@ async function loadDailyMeals() {
     }
     
     const meals = await res.json();
+    console.log("[loadDailyMeals] API Response:", meals);
     renderMealHistory(meals);
     updateSummary(meals);
   } catch (err) {
@@ -304,27 +316,47 @@ async function submitMeal() {
   try {
     // ถ้า edit mode
     if (pendingEditMealId) {
+      console.log("[submitMeal] Edit mode - updating meal:", pendingEditMealId);
+
+      // Determine if food macros/name changed; if so create a new custom food and update reference
+      const needsFoodUpdate =
+        foodName !== (editMealData?.food_name || "") ||
+        Number(calories) !== Number(editMealData?.calories_per_100g || 0) ||
+        Number(protein) !== Number(editMealData?.protein_per_100g || 0) ||
+        Number(carbs) !== Number(editMealData?.carb_per_100g || 0) ||
+        Number(fat) !== Number(editMealData?.fat_per_100g || 0);
+
+      const updatePayload = {
+        meal_type: mealType,
+        portion_multiplier: selectedPortionMult,
+        food_id: currentFood?.id || editMealData?.food_id,
+        update_food: needsFoodUpdate,
+        name: foodName,
+        calories_per_100g: Number(calories),
+        protein_per_100g: Number(protein),
+        carb_per_100g: Number(carbs),
+        fat_per_100g: Number(fat)
+      };
+
       const updateRes = await fetch(`${API_BASE}/meals/${pendingEditMealId}`, {
         method: "PUT",
         headers: { 
           "Content-Type": "application/json",
           "Authorization": token 
         },
-        body: JSON.stringify({
-          meal_type: mealType,
-          portion_multiplier: selectedPortionMult
-        })
+        body: JSON.stringify(updatePayload)
       });
       if (handleUnauthorized(updateRes.status)) return;
 
       if (updateRes.ok) {
+        console.log("[submitMeal] Meal updated successfully");
         closeModal();
         pendingEditMealId = null;
         editMealData = null;
         loadDailyMeals();
       } else {
         const text = await updateRes.text();
-        console.error("Meal update failed:", text);
+        console.error("Meal update failed:", updateRes.status, text);
         try {
           const err = JSON.parse(text);
           alert("Failed to update meal: " + (err.error || "Unknown error"));

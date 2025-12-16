@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import { db } from "../database/db.js";
+import { all, get, run, pool } from "../database/db.js";
 import jwt from "jsonwebtoken";
 import { JWT_SECRET } from "../config.js";
 import { getToday } from "../utils/dateTime.js";
@@ -16,9 +16,10 @@ userRoute.get("/setup-status", async (c) => {
   try {
     const payload = jwt.verify(token, JWT_SECRET!) as unknown as { id: number };
 
-    const target = db.prepare(`
-      SELECT id FROM targets WHERE user_id = ?
-    `).get(payload.id);
+    const target = await get<{ id: number }>(
+      `SELECT id FROM targets WHERE user_id = ?`,
+      [payload.id]
+    );
 
     return c.json({ need_setup: !target });
   } catch (error) {
@@ -47,7 +48,7 @@ userRoute.post("/setup", async (c) => {
   const body = await c.req.json();
   
   const gender = body.gender;
-  const birthdate = body.birthdate;
+  const birthdate = body.birthdate || null; // Handle empty string as null
   const height = Number(body.height_cm);
   const weight = Number(body.weight_kg);
   const activity = body.activity_level;
@@ -86,25 +87,28 @@ userRoute.post("/setup", async (c) => {
   const baseWeight = target_weight || weight;
   const { protein, fat, carb } = calculateMacros(calTarget, baseWeight);
 
-  db.prepare(`
-    UPDATE users
-    SET gender = ?, birthdate = ?, height_cm = ?, weight_kg = ?, activity_level = ?, target_weight_kg = ?
-    WHERE id = ?
-  `).run(gender, birthdate, height, weight, activity, target_weight, payload.id);
+  await run(
+    `UPDATE users
+     SET gender = ?, birthdate = ?, height_cm = ?, weight_kg = ?, activity_level = ?, target_weight_kg = ?
+     WHERE id = ?`,
+    [gender, birthdate, height, weight, activity, target_weight, payload.id]
+  );
 
-  const existing = db.prepare("select id from targets where user_id = ?").get(payload.id);
+  const existing = await get<{ id: number }>("select id from targets where user_id = ?", [payload.id]);
 
   if (existing) {
-    db.prepare(`
-      UPDATE targets
-      SET daily_calorie_target=?, daily_protein_target=?, daily_carb_target=?, daily_fat_target=?, target_weight_kg=?, goal=?
-      WHERE user_id=?
-    `).run(calTarget, protein, carb, fat, target_weight, goal, payload.id);
+    await run(
+      `UPDATE targets
+       SET daily_calorie_target=?, daily_protein_target=?, daily_carb_target=?, daily_fat_target=?, target_weight_kg=?, goal=?
+       WHERE user_id=?`,
+      [calTarget, protein, carb, fat, target_weight, goal, payload.id]
+    );
   } else {
-    db.prepare(`
-      INSERT INTO targets (user_id, daily_calorie_target, daily_protein_target, daily_carb_target, daily_fat_target, target_weight_kg, goal)
-      VALUES (?, ?, ?, ?, ?, ?, ?)
-    `).run(payload.id, calTarget, protein, carb, fat, target_weight, goal);
+    await run(
+      `INSERT INTO targets (user_id, daily_calorie_target, daily_protein_target, daily_carb_target, daily_fat_target, target_weight_kg, goal)
+       VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      [payload.id, calTarget, protein, carb, fat, target_weight, goal]
+    );
   }
 
   return c.json({
@@ -132,24 +136,26 @@ userRoute.get("/dashboard", async (c) => {
     const payload = jwt.verify(token, JWT_SECRET!) as unknown as { id: number };
 
     // ดึงข้อมูล user
-    const user = db.prepare(`
-      SELECT name, email FROM users WHERE id = ?
-    `).get(payload.id) as { name: string; email: string } | undefined;
+    const user = await get<{ name: string; email: string }>(
+      `SELECT name, email FROM users WHERE id = ?`,
+      [payload.id]
+    );
 
     if (!user) {
       return c.json({ error: "User not found" }, 404);
     }
 
     // ดึงข้อมูล targets
-    const target = db.prepare(`
-      SELECT daily_calorie_target, daily_protein_target, daily_carb_target, daily_fat_target
-      FROM targets WHERE user_id = ?
-    `).get(payload.id) as {
+    const target = await get<{
       daily_calorie_target: number;
       daily_protein_target: number;
       daily_carb_target: number;
       daily_fat_target: number;
-    } | undefined;
+    }>(
+      `SELECT daily_calorie_target, daily_protein_target, daily_carb_target, daily_fat_target
+       FROM targets WHERE user_id = ?`,
+      [payload.id]
+    );
 
     // ถ้ายังไม่มี target ให้ใช้ค่า default
     const targets = target || {
@@ -162,18 +168,19 @@ userRoute.get("/dashboard", async (c) => {
     // คำนวณ consumed calories จาก meal_log วันนี้
     const today = getToday(); // YYYY-MM-DD in local time
     
-    const meals = db.prepare(`
-      SELECT m.portion_multiplier, f.calories_per_100g, f.protein_per_100g, f.carb_per_100g, f.fat_per_100g
-      FROM meal_log m
-      JOIN food f ON m.food_id = f.id
-      WHERE m.user_id = ? AND m.meal_date = ?
-    `).all(payload.id, today) as Array<{
+    const meals = await all<{
       portion_multiplier: number;
       calories_per_100g: number;
       protein_per_100g: number;
       carb_per_100g: number;
       fat_per_100g: number;
-    }>;
+    }>(
+      `SELECT m.portion_multiplier, f.calories_per_100g, f.protein_per_100g, f.carb_per_100g, f.fat_per_100g
+       FROM meal_log m
+       JOIN food f ON m.food_id = f.id
+       WHERE m.user_id = ? AND m.meal_date = ?`,
+      [payload.id, today]
+    );
 
     let totalCalories = 0;
     let totalProtein = 0;
@@ -189,15 +196,16 @@ userRoute.get("/dashboard", async (c) => {
     });
 
     // คำนวณ calories burned จาก workouts วันนี้
-    const workouts = db.prepare(`
-      SELECT calories_burned
-      FROM workouts
-      WHERE user_id = ? AND workout_date = ?
-    `).all(payload.id, today) as Array<{ calories_burned: number }>;
+    const workouts = await all<{ calories_burned: number }>(
+      `SELECT calories_burned
+       FROM workouts
+       WHERE user_id = ? AND workout_date = ?`,
+      [payload.id, today]
+    );
 
     let totalBurned = 0;
     workouts.forEach((w) => {
-      totalBurned += w.calories_burned || 0;
+      totalBurned += parseFloat(w.calories_burned as any) || 0;
     });
 
     // Calculate remaining: (target - consumed + burned), but never negative
@@ -215,18 +223,17 @@ userRoute.get("/dashboard", async (c) => {
       ? (totalFat / targets.daily_fat_target) * 100
       : 0;
 
-    const streakDays = calculateMealStreak(payload.id);
+    const streakDays = await calculateMealStreak(payload.id);
 
-    const latestBadge = db
-      .prepare(
-        `SELECT b.name, b.icon_url as icon, ueb.earned_date
-         FROM user_earned_badges ueb
-         JOIN badges b ON ueb.badge_id = b.id
-         WHERE ueb.user_id = ?
-         ORDER BY ueb.earned_date DESC, ueb.id DESC
-         LIMIT 1`
-      )
-      .get(payload.id) as { name: string; icon: string | null; earned_date: string } | undefined;
+    const latestBadge = await get<{ name: string; icon: string | null; earned_date: string }>(
+      `SELECT b.name, b.icon_url as icon, ueb.earned_date
+       FROM user_earned_badges ueb
+       JOIN badges b ON ueb.badge_id = b.id
+       WHERE ueb.user_id = ?
+       ORDER BY ueb.earned_date DESC, ueb.id DESC
+       LIMIT 1`,
+      [payload.id]
+    );
 
     return c.json({
       username: user.name,
@@ -291,7 +298,7 @@ userRoute.patch("/profile", async (c) => {
   if (body.name !== undefined && body.name.trim()) updates.name = body.name.trim();
   if (body.email !== undefined && body.email.trim()) updates.email = body.email.trim();
   if (body.gender !== undefined) updates.gender = body.gender;
-  if (body.birthdate !== undefined) updates.birthdate = body.birthdate;
+  if (body.birthdate !== undefined) updates.birthdate = body.birthdate || null; // Handle empty string
   if (body.height_cm !== undefined) {
     const h = Number(body.height_cm);
     if (!Number.isFinite(h) || h <= 0) return c.json({ error: "Invalid height" }, 400);
@@ -309,48 +316,57 @@ userRoute.patch("/profile", async (c) => {
   const targetUpdates: any = {};
   if (body.goal !== undefined) targetUpdates.goal = body.goal;
 
-  // Update users table
-  if (Object.keys(updates).length > 0) {
-    const setClause = Object.keys(updates).map(key => `${key} = ?`).join(", ");
-    const values = Object.values(updates);
-    db.prepare(`UPDATE users SET ${setClause} WHERE id = ?`).run(...values, payload.id);
-  }
-
-  // Update targets table directly for target fields
-  if (Object.keys(targetUpdates).length > 0) {
-    const targetSetClause = Object.keys(targetUpdates).map(key => `${key} = ?`).join(", ");
-    const targetValues = Object.values(targetUpdates);
-    db.prepare(`UPDATE targets SET ${targetSetClause} WHERE user_id = ?`).run(...targetValues, payload.id);
-  }
-
-  // Recalculate targets if needed
-  if (recalculateTargets) {
-    const user = db.prepare("SELECT gender, birthdate, height_cm, weight_kg, activity_level, target_weight_kg FROM users WHERE id = ?").get(payload.id) as any;
-    if (!user) return c.json({ error: "User not found" }, 404);
-
-    const targets = db.prepare("SELECT goal FROM targets WHERE user_id = ?").get(payload.id) as any;
-    const goal = targetUpdates.goal || targets?.goal || "maintain";
-
-    const age = calculateAge(user.birthdate);
-    if (age === null) return c.json({ error: "Invalid birthdate" }, 400);
-
-    const BMR = calculateBMR(user.gender, user.weight_kg, user.height_cm, age);
-    const TDEE = calculateTDEE(BMR, user.activity_level);
-    const calTarget = calculateCalorieTarget(TDEE, goal);
-    const baseWeight = user.target_weight_kg || user.weight_kg;
-    const { protein, fat, carb } = calculateMacros(calTarget, baseWeight);
-
-    const targetExists = db.prepare("SELECT id FROM targets WHERE user_id = ?").get(payload.id);
-    if (targetExists) {
-      db.prepare(`
-        UPDATE targets
-        SET daily_calorie_target = ?, daily_protein_target = ?, daily_carb_target = ?, daily_fat_target = ?, target_weight_kg = ?, goal = ?
-        WHERE user_id = ?
-      `).run(calTarget, protein, carb, fat, user.target_weight_kg, goal, payload.id);
+  try {
+    // Update users table
+    if (Object.keys(updates).length > 0) {
+      const setClause = Object.keys(updates).map(key => `${key} = ?`).join(", ");
+      const values = Object.values(updates);
+      await run(`UPDATE users SET ${setClause} WHERE id = ?`, [...values, payload.id]);
     }
-  }
 
-  return c.json({ message: "Profile updated successfully" });
+    // Update targets table directly for target fields
+    if (Object.keys(targetUpdates).length > 0) {
+      const targetSetClause = Object.keys(targetUpdates).map(key => `${key} = ?`).join(", ");
+      const targetValues = Object.values(targetUpdates);
+      await run(`UPDATE targets SET ${targetSetClause} WHERE user_id = ?`, [...targetValues, payload.id]);
+    }
+
+    // Recalculate targets if needed
+    if (recalculateTargets) {
+      const user = await get<any>(
+        "SELECT gender, birthdate, height_cm, weight_kg, activity_level, target_weight_kg FROM users WHERE id = ?",
+        [payload.id]
+      );
+      if (!user) return c.json({ error: "User not found or invalid data" }, 404);
+
+      const targets = await get<any>("SELECT goal FROM targets WHERE user_id = ?", [payload.id]);
+      const goal = targetUpdates.goal || targets?.goal || "maintain";
+
+      const age = calculateAge(user.birthdate);
+      if (age === null) return c.json({ error: "Invalid birthdate" }, 400);
+
+      const BMR = calculateBMR(user.gender, user.weight_kg, user.height_cm, age);
+      const TDEE = calculateTDEE(BMR, user.activity_level);
+      const calTarget = calculateCalorieTarget(TDEE, goal);
+      const baseWeight = user.target_weight_kg || user.weight_kg;
+      const { protein, fat, carb } = calculateMacros(calTarget, baseWeight);
+
+      const targetExists = await get<any>("SELECT id FROM targets WHERE user_id = ?", [payload.id]);
+      if (targetExists) {
+        await run(
+          `UPDATE targets
+           SET daily_calorie_target = ?, daily_protein_target = ?, daily_carb_target = ?, daily_fat_target = ?, target_weight_kg = ?, goal = ?
+           WHERE user_id = ?`,
+          [calTarget, protein, carb, fat, user.target_weight_kg, goal, payload.id]
+        );
+      }
+    }
+
+    return c.json({ message: "Profile updated successfully" });
+  } catch (error) {
+    console.error("Profile update error:", error);
+    return c.json({ error: "Failed to update profile" }, 500);
+  }
 });
 
 // GET /user/profile - Get full user profile (for edit form)
@@ -363,17 +379,19 @@ userRoute.get("/profile", async (c) => {
   try {
     const payload = jwt.verify(token, JWT_SECRET!) as unknown as { id: number };
 
-    const user = db.prepare(`
-      SELECT id, name, email, gender, birthdate, height_cm, weight_kg, activity_level, target_weight_kg
-      FROM users WHERE id = ?
-    `).get(payload.id) as any;
+    const user = await get<any>(
+      `SELECT id, name, email, gender, birthdate, height_cm, weight_kg, activity_level, target_weight_kg
+       FROM users WHERE id = ?`,
+      [payload.id]
+    );
 
     if (!user) return c.json({ error: "User not found" }, 404);
 
-    const targets = db.prepare(`
-      SELECT daily_calorie_target, daily_protein_target, daily_carb_target, daily_fat_target, goal
-      FROM targets WHERE user_id = ?
-    `).get(payload.id) as any;
+    const targets = await get<any>(
+      `SELECT daily_calorie_target, daily_protein_target, daily_carb_target, daily_fat_target, goal
+       FROM targets WHERE user_id = ?`,
+      [payload.id]
+    );
 
     return c.json({
       user: {

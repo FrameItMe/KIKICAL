@@ -9,7 +9,7 @@ import workoutRoute from './routes/workouts.js';
 import achievementsRoute from './routes/achievements.js';
 const app = new Hono();
 app.use("*", cors({
-    origin: "*", // Allow all origins for development
+    origin: "*",
     credentials: true,
     allowMethods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
     allowHeaders: ["Content-Type", "Authorization"],

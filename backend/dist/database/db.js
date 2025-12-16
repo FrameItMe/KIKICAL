@@ -1,150 +1,126 @@
-import Database from "better-sqlite3";
-const db = new Database("src/database/kikical.db", {
-    fileMustExist: false,
-    timeout: 5000
+import 'dotenv/config';
+import { createPool } from 'mysql2/promise';
+const { MYSQL_HOST = 'localhost', MYSQL_PORT = '3306', MYSQL_USER = 'root', MYSQL_PASSWORD = '', MYSQL_DATABASE = 'kikical' } = process.env;
+export const pool = createPool({
+    host: MYSQL_HOST,
+    port: Number(MYSQL_PORT),
+    user: MYSQL_USER,
+    password: MYSQL_PASSWORD,
+    database: MYSQL_DATABASE,
+    waitForConnections: true,
+    connectionLimit: 10,
+    maxIdle: 5,
+    idleTimeout: 60000,
 });
-// Set busy timeout FIRST before any pragma
-db.pragma("busy_timeout = 5000");
-// Reset to DELETE mode first to clear any locks
-try {
-    db.pragma("journal_mode = DELETE");
+export async function get(sql, params = []) {
+    const [rows] = await pool.execute(sql, params);
+    return rows[0];
 }
-catch (e) {
-    console.warn("Could not reset journal mode:", e instanceof Error ? e.message : String(e));
+export async function all(sql, params = []) {
+    const [rows] = await pool.execute(sql, params);
+    return rows;
 }
-// Now enable WAL mode
-try {
-    const mode = db.pragma("journal_mode = WAL", { simple: true });
-    console.log(`Journal mode set to: ${mode}`);
+export async function run(sql, params = []) {
+    const [result] = await pool.execute(sql, params);
+    return result;
 }
-catch (e) {
-    console.warn("Could not enable WAL mode:", e instanceof Error ? e.message : String(e));
-    console.log("Continuing with DELETE mode...");
-}
-// Optimize performance
-db.pragma("synchronous = NORMAL");
-export { db };
-const schema = `
-
--- USERS TABLE
-CREATE TABLE IF NOT EXISTS users (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  name TEXT NOT NULL,
-  email TEXT UNIQUE NOT NULL,
-  password_hash TEXT NOT NULL,
-
-  -- setup values (optional)
-  gender TEXT,
-  birthdate TEXT,
-  height_cm REAL,
-  weight_kg REAL,
-  activity_level TEXT,
-  target_weight_kg REAL,
-
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
--- TARGETS TABLE (FIXED: remove UNIQUE constraint)
-CREATE TABLE IF NOT EXISTS targets (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  user_id INTEGER NOT NULL,
-  daily_calorie_target REAL,
-  daily_protein_target REAL,
-  daily_carb_target REAL,
-  daily_fat_target REAL,
-  target_weight_kg REAL,
-  goal TEXT,
-  FOREIGN KEY (user_id) REFERENCES users(id)
-);
-
--- FOOD TABLE
-CREATE TABLE IF NOT EXISTS food (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  name TEXT NOT NULL,
-  category TEXT,
-  calories_per_100g REAL NOT NULL,
-  protein_per_100g REAL NOT NULL,
-  carb_per_100g REAL NOT NULL,
-  fat_per_100g REAL NOT NULL,
-  default_serving_grams REAL NOT NULL,
-  created_by_user INTEGER,
-  FOREIGN KEY (created_by_user) REFERENCES users(id)
-);
-
--- MEAL LOG
-CREATE TABLE IF NOT EXISTS meal_log (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  user_id INTEGER NOT NULL,
-  food_id INTEGER NOT NULL,
-  meal_date TEXT NOT NULL,
-  meal_type TEXT NOT NULL,
-  portion_multiplier REAL NOT NULL,
-  logged_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  FOREIGN KEY (user_id) REFERENCES users(id),
-  FOREIGN KEY (food_id) REFERENCES food(id)
-);
-
--- BADGES
-CREATE TABLE IF NOT EXISTS badges (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  name TEXT NOT NULL UNIQUE,
-  description TEXT,
-  icon_url TEXT
-);
-
--- USER EARNED BADGES
-CREATE TABLE IF NOT EXISTS user_earned_badges (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  user_id INTEGER NOT NULL,
-  badge_id INTEGER NOT NULL,
-  earned_date TEXT NOT NULL,
-  UNIQUE(user_id, badge_id),
-  FOREIGN KEY (user_id) REFERENCES users(id),
-  FOREIGN KEY (badge_id) REFERENCES badges(id)
-);
-
--- CHALLENGES
-CREATE TABLE IF NOT EXISTS challenges (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  name TEXT NOT NULL UNIQUE,
-  description TEXT,
-  type TEXT,
-  target_value REAL,
-  unit TEXT
-);
-
--- USER CHALLENGE PROGRESS
-CREATE TABLE IF NOT EXISTS user_challenge_progress (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  user_id INTEGER NOT NULL,
-  challenge_id INTEGER NOT NULL,
-  start_date TEXT NOT NULL,
-  end_date TEXT,
-  current_value REAL DEFAULT 0,
-  status TEXT NOT NULL,
-  FOREIGN KEY (user_id) REFERENCES users(id),
-  FOREIGN KEY (challenge_id) REFERENCES challenges(id)
-);
-
--- WORKOUTS
-CREATE TABLE IF NOT EXISTS workouts (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  user_id INTEGER NOT NULL,
-  name TEXT NOT NULL,
-  calories_burned REAL NOT NULL,
-  duration_minutes INTEGER,
-  workout_date TEXT NOT NULL,
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  FOREIGN KEY (user_id) REFERENCES users(id)
-);
-
-`;
-export function initDB() {
-    console.log("Initializing database schema...");
-    db.exec(schema);
-    console.log("Schema applied successfully");
-    const tables = db
-        .prepare("SELECT name FROM sqlite_master WHERE type='table'")
-        .all();
-    console.log("Tables:", tables);
+const schemaStatements = [
+    `CREATE TABLE IF NOT EXISTS users (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    email VARCHAR(255) NOT NULL UNIQUE,
+    password_hash VARCHAR(255) NOT NULL,
+    gender VARCHAR(50),
+    birthdate DATE,
+    height_cm DECIMAL(10,2),
+    weight_kg DECIMAL(10,2),
+    activity_level VARCHAR(50),
+    target_weight_kg DECIMAL(10,2),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+  ) ENGINE=InnoDB;`,
+    `CREATE TABLE IF NOT EXISTS targets (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    daily_calorie_target DECIMAL(10,2),
+    daily_protein_target DECIMAL(10,2),
+    daily_carb_target DECIMAL(10,2),
+    daily_fat_target DECIMAL(10,2),
+    target_weight_kg DECIMAL(10,2),
+    goal VARCHAR(50),
+    CONSTRAINT fk_targets_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+  ) ENGINE=InnoDB;`,
+    `CREATE TABLE IF NOT EXISTS food (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    category VARCHAR(100),
+    calories_per_100g DECIMAL(10,2) NOT NULL,
+    protein_per_100g DECIMAL(10,2) NOT NULL,
+    carb_per_100g DECIMAL(10,2) NOT NULL,
+    fat_per_100g DECIMAL(10,2) NOT NULL,
+    default_serving_grams DECIMAL(10,2) NOT NULL,
+    created_by_user INT,
+    CONSTRAINT fk_food_user FOREIGN KEY (created_by_user) REFERENCES users(id) ON DELETE SET NULL
+  ) ENGINE=InnoDB;`,
+    `CREATE TABLE IF NOT EXISTS meal_log (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    food_id INT NOT NULL,
+    meal_date DATE NOT NULL,
+    meal_type VARCHAR(50) NOT NULL,
+    portion_multiplier DECIMAL(10,2) NOT NULL,
+    logged_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_meal_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    CONSTRAINT fk_meal_food FOREIGN KEY (food_id) REFERENCES food(id) ON DELETE CASCADE
+  ) ENGINE=InnoDB;`,
+    `CREATE TABLE IF NOT EXISTS badges (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(255) NOT NULL UNIQUE,
+    description TEXT,
+    icon_url TEXT
+  ) ENGINE=InnoDB;`,
+    `CREATE TABLE IF NOT EXISTS user_earned_badges (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    badge_id INT NOT NULL,
+    earned_date DATE NOT NULL,
+    UNIQUE(user_id, badge_id),
+    CONSTRAINT fk_user_badge_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    CONSTRAINT fk_user_badge_badge FOREIGN KEY (badge_id) REFERENCES badges(id) ON DELETE CASCADE
+  ) ENGINE=InnoDB;`,
+    `CREATE TABLE IF NOT EXISTS challenges (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(255) NOT NULL UNIQUE,
+    description TEXT,
+    type VARCHAR(50),
+    target_value DECIMAL(10,2),
+    unit VARCHAR(50)
+  ) ENGINE=InnoDB;`,
+    `CREATE TABLE IF NOT EXISTS user_challenge_progress (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    challenge_id INT NOT NULL,
+    start_date DATE NOT NULL,
+    end_date DATE,
+    current_value DECIMAL(10,2) DEFAULT 0,
+    status VARCHAR(50) NOT NULL,
+    CONSTRAINT fk_ucp_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    CONSTRAINT fk_ucp_challenge FOREIGN KEY (challenge_id) REFERENCES challenges(id) ON DELETE CASCADE
+  ) ENGINE=InnoDB;`,
+    `CREATE TABLE IF NOT EXISTS workouts (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    name VARCHAR(255) NOT NULL,
+    calories_burned DECIMAL(10,2) NOT NULL,
+    duration_minutes INT,
+    workout_date DATE NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_workout_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+  ) ENGINE=InnoDB;`
+];
+export async function initDB() {
+    console.log("Initializing MySQL schema...");
+    for (const stmt of schemaStatements) {
+        await pool.execute(stmt);
+    }
+    console.log("Schema ready (MySQL)");
 }

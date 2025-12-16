@@ -243,11 +243,14 @@ async function finishSetup() {
 
 
   try {
-    // แปลง age → birthdate (approx) ตาม year
-    const nowYear = new Date().getFullYear();
-    const age = setupData.age || 25;
-    const birthYear = nowYear - age;
-    const birthdate = `${birthYear}-01-01`;
+    // ใช้วันเกิดที่ผู้ใช้กรอก ถ้าไม่มีให้ fallback จากอายุ (ประมาณปีเกิด)
+    let birthdate = setupData.birthdate;
+    if (!birthdate) {
+      const nowYear = new Date().getFullYear();
+      const age = setupData.age || 25;
+      const birthYear = nowYear - age;
+      birthdate = `${birthYear}-01-01`;
+    }
 
     const token = localStorage.getItem('token');
     const res = await fetch(`${API_BASE_URL}/user/setup`, {
@@ -320,7 +323,10 @@ async function initPredashboard() {
     if (res.ok) {
       const data = await res.json();
       const greetEl = document.getElementById("greeting-text");
-      if (data.user?.name && greetEl) greetEl.textContent = `Good afternoon, ${data.user.name}`;
+      if (data.user?.name && greetEl) {
+        const greeting = getGreeting();
+        greetEl.textContent = `${greeting}, ${data.user.name}`;
+      }
     }
   } catch (err) {
     // Silently fail
@@ -343,6 +349,13 @@ async function initPredashboard() {
 
   showSection(true);
   renderStep();
+}
+
+function getGreeting() {
+  const hour = new Date().getHours();
+  if (hour < 12) return "Good Morning";
+  if (hour < 18) return "Good Afternoon";
+  return "Good Evening";
 }
 
 document.addEventListener("DOMContentLoaded", () => {
