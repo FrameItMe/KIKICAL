@@ -1,9 +1,9 @@
 import { Hono } from "hono";
-import { db } from "../database/db.js";
+import { get, all, run } from "../database/db.js";
 import { nowLocalDateTime, getToday } from "../utils/dateTime.js";
-import { checkBadges, checkChallenges } from "../utils/achievements.js";
 import jwt from "jsonwebtoken";
 import { JWT_SECRET } from "../config.js";
+import { checkBadges, checkChallenges } from "../utils/achievements.js";
 
 type Variables = {
   user: { id: number };
@@ -28,7 +28,7 @@ mealRoute.use("*", async (c, next) => {
 });
 
 // GET /meals/:userId?date=YYYY-MM-DD
-mealRoute.get("/:userId", (c) => {
+mealRoute.get("/:userId", async (c) => {
   const user = c.get("user") as { id: number };
   const paramUserId = Number(c.req.param("userId"));
   const date = c.req.query("date");
@@ -41,14 +41,15 @@ mealRoute.get("/:userId", (c) => {
     return c.json({ error: "Date is required" }, 400);
   }
 
-  const meals = db
-    .prepare(
-      `SELECT m.*, f.name as food_name, f.calories_per_100g, f.protein_per_100g, f.carb_per_100g, f.fat_per_100g 
-       FROM meal_log m 
-       JOIN food f ON m.food_id = f.id 
-       WHERE m.user_id = ? AND m.meal_date = ?`
-    )
-    .all(user.id, date);
+  const meals = await all<any>(
+    `SELECT m.id, m.user_id, m.food_id, m.meal_date, m.meal_type, m.portion_multiplier, m.logged_at,
+            f.name as food_name, f.calories_per_100g, f.protein_per_100g, f.carb_per_100g, f.fat_per_100g 
+     FROM meal_log m 
+     JOIN food f ON m.food_id = f.id 
+     WHERE m.user_id = ? AND m.meal_date = ?
+     ORDER BY m.logged_at DESC`,
+    [user.id, date]
+  );
 
   return c.json(meals);
 });
@@ -66,30 +67,21 @@ mealRoute.post("/", async (c) => {
   const loggedAt = nowLocalDateTime(); // capture precise log time in local YYYY-MM-DD HH:mm:ss
 
   try {
-    const info = db
-      .prepare(
-        `INSERT INTO meal_log (user_id, food_id, meal_date, meal_type, portion_multiplier, logged_at)
-         VALUES (?, ?, ?, ?, ?, ?)`
-      )
-      .run(user.id, food_id, meal_date, meal_type, portion_multiplier, loggedAt);
+    const info = await run(
+      `INSERT INTO meal_log (user_id, food_id, meal_date, meal_type, portion_multiplier, logged_at)
+       VALUES (?, ?, ?, ?, ?, ?)`,
+      [user.id, food_id, meal_date, meal_type, portion_multiplier, loggedAt]
+    );
 
-    // Check for badge/challenge unlocks (wrapped in try-catch to prevent blocking)
-    let unlocks: any[] = [];
-    let challengeUpdates: any[] = [];
-    
-    try {
-      unlocks = checkBadges(user.id);
-      challengeUpdates = checkChallenges(user.id);
-    } catch (achievementError) {
-      console.error('Achievement check error:', achievementError);
-      // Continue anyway - don't block meal logging
-    }
+    // Check achievements and send them with response
+    const badgeUnlocks = await checkBadges(user.id);
+    const challengeCompletions = await checkChallenges(user.id);
 
     return c.json({ 
-      id: info.lastInsertRowid, 
+      id: info.insertId, 
       ...body,
-      unlocks: unlocks || [],
-      challengeUpdates: challengeUpdates || []
+      unlocks: badgeUnlocks,
+      challengeUpdates: challengeCompletions
     });
   } catch (error) {
     console.error('Meal logging error:', error);
@@ -98,43 +90,81 @@ mealRoute.post("/", async (c) => {
 });
 
 // DELETE /meals/:id - Delete a meal log
-mealRoute.delete("/:id", (c) => {
+mealRoute.delete("/:id", async (c) => {
   const user = c.get("user") as { id: number };
   const id = c.req.param("id");
 
-  const log = db.prepare("SELECT user_id FROM meal_log WHERE id = ?").get(id) as { user_id: number };
+  const log = await get<{ user_id: number }>("SELECT user_id FROM meal_log WHERE id = ?", [id]);
   if (!log) return c.json({ error: "Log not found" }, 404);
 
   if (log.user_id !== user.id) {
     return c.json({ error: "Unauthorized" }, 403);
   }
 
-  db.prepare("DELETE FROM meal_log WHERE id = ?").run(id);
-  return c.json({ success: true });
+  await run("DELETE FROM meal_log WHERE id = ?", [id]);
+
+  // Recalculate badges/challenges so progress reflects deletions
+  const badgeUnlocks = await checkBadges(user.id);
+  const challengeUpdates = await checkChallenges(user.id);
+  return c.json({ success: true, unlocks: badgeUnlocks, challengeUpdates });
 });
 
-// PUT /meals/:id - Update a meal log
+// PUT /meals/:id - Update a meal log (with optional food update)
 mealRoute.put("/:id", async (c) => {
   const user = c.get("user") as { id: number };
   const id = c.req.param("id");
   const body = await c.req.json();
-  const { meal_type, portion_multiplier } = body;
+  const { meal_type, portion_multiplier, food_id, update_food, name, calories_per_100g, protein_per_100g, carb_per_100g, fat_per_100g } = body as any;
 
   if (!meal_type || portion_multiplier === undefined) {
     return c.json({ error: "Missing required fields (meal_type, portion_multiplier)" }, 400);
   }
 
-  const log = db.prepare("SELECT user_id FROM meal_log WHERE id = ?").get(id) as { user_id: number } | undefined;
+  const log = await get<{ user_id: number; food_id: number }>("SELECT user_id, food_id FROM meal_log WHERE id = ?", [id]);
   if (!log) return c.json({ error: "Log not found" }, 404);
 
   if (log.user_id !== user.id) {
     return c.json({ error: "Unauthorized" }, 403);
   }
 
-  db.prepare("UPDATE meal_log SET meal_type = ?, portion_multiplier = ? WHERE id = ?")
-    .run(meal_type, portion_multiplier, id);
+  let nextFoodId = log.food_id;
 
-  return c.json({ success: true });
+  // If user requested to update food macros/name
+  if (update_food) {
+    if (!name || calories_per_100g === undefined || protein_per_100g === undefined || carb_per_100g === undefined || fat_per_100g === undefined) {
+      return c.json({ error: "Missing food fields for update" }, 400);
+    }
+
+    // Check current food category; if Custom, update in place, otherwise create new
+    const currentFood = await get<{ id: number; category: string }>("SELECT id, category FROM food WHERE id = ?", [log.food_id]);
+
+    if (currentFood && currentFood.category === "Custom") {
+      await run(
+        `UPDATE food
+         SET name = ?, calories_per_100g = ?, protein_per_100g = ?, carb_per_100g = ?, fat_per_100g = ?
+         WHERE id = ?`,
+        [name, calories_per_100g, protein_per_100g, carb_per_100g, fat_per_100g, currentFood.id]
+      );
+      nextFoodId = currentFood.id;
+    } else {
+      const info = await run(
+        `INSERT INTO food (name, category, calories_per_100g, protein_per_100g, carb_per_100g, fat_per_100g, default_serving_grams)
+         VALUES (?, 'Custom', ?, ?, ?, ?, 100)`,
+        [name, calories_per_100g, protein_per_100g, carb_per_100g, fat_per_100g]
+      );
+      nextFoodId = Number(info.insertId);
+    }
+  } else if (food_id) {
+    nextFoodId = food_id;
+  }
+
+  await run("UPDATE meal_log SET meal_type = ?, portion_multiplier = ?, food_id = ? WHERE id = ?", 
+    [meal_type, portion_multiplier, nextFoodId, id]);
+
+  // Recalculate badges/challenges after meal adjustments
+  const badgeUnlocks = await checkBadges(user.id);
+  const challengeUpdates = await checkChallenges(user.id);
+  return c.json({ success: true, unlocks: badgeUnlocks, challengeUpdates });
 });
 
 export default mealRoute;

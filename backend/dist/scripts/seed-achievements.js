@@ -1,4 +1,4 @@
-import { db } from "../database/db.js";
+import { run } from "../database/db.js";
 // Seed sample badges
 const sampleBadges = [
     { name: "First Steps", description: "Log your first meal", icon_url: "🍽️" },
@@ -57,23 +57,45 @@ const sampleChallenges = [
         unit: "days",
     },
 ];
-function seedBadges() {
+async function seedBadges() {
     console.log("Seeding badges...");
-    const insertBadge = db.prepare("INSERT OR IGNORE INTO badges (name, description, icon_url) VALUES (?, ?, ?)");
-    sampleBadges.forEach((badge) => {
-        insertBadge.run(badge.name, badge.description, badge.icon_url);
-    });
+    for (const badge of sampleBadges) {
+        try {
+            await run("INSERT IGNORE INTO badges (name, description, icon_url) VALUES (?, ?, ?)", [badge.name, badge.description, badge.icon_url]);
+        }
+        catch (error) {
+            // Ignore duplicate entry errors
+            if (!String(error).includes('Duplicate'))
+                throw error;
+        }
+    }
     console.log(`✅ Seeded ${sampleBadges.length} badges`);
 }
-function seedChallenges() {
+async function seedChallenges() {
     console.log("Seeding challenges...");
-    const insertChallenge = db.prepare("INSERT OR IGNORE INTO challenges (name, description, type, target_value, unit) VALUES (?, ?, ?, ?, ?)");
-    sampleChallenges.forEach((ch) => {
-        insertChallenge.run(ch.name, ch.description, ch.type, ch.target_value, ch.unit);
-    });
+    for (const ch of sampleChallenges) {
+        try {
+            await run("INSERT IGNORE INTO challenges (name, description, type, target_value, unit) VALUES (?, ?, ?, ?, ?)", [ch.name, ch.description, ch.type, ch.target_value, ch.unit]);
+        }
+        catch (error) {
+            // Ignore duplicate entry errors
+            if (!String(error).includes('Duplicate'))
+                throw error;
+        }
+    }
     console.log(`✅ Seeded ${sampleChallenges.length} challenges`);
 }
 // Run both
-seedBadges();
-seedChallenges();
-console.log("\n🎉 Achievements seeded successfully!");
+async function main() {
+    try {
+        await seedBadges();
+        await seedChallenges();
+        console.log("\n🎉 Achievements seeded successfully!");
+        process.exit(0);
+    }
+    catch (error) {
+        console.error('❌ Seeding failed:', error);
+        process.exit(1);
+    }
+}
+main();

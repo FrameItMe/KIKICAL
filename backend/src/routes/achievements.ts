@@ -1,5 +1,6 @@
 import { Hono } from "hono";
-import { db } from "../database/db.js";
+import { get, all } from "../database/db.js";
+import { checkBadges, checkChallenges } from "../utils/achievements.js";
 import jwt from "jsonwebtoken";
 import { JWT_SECRET } from "../config.js";
 
@@ -47,31 +48,33 @@ achievementsRoute.use("*", async (c, next) => {
   }
 });
 
-achievementsRoute.get("/", (c) => {
+achievementsRoute.get("/", async (c) => {
   const user = c.get("user") as { id: number };
 
-  const badges = db
-    .prepare(
-      `SELECT b.id, b.name, b.description, b.icon_url,
-              CASE WHEN ueb.id IS NULL THEN 0 ELSE 1 END as earned,
-              ueb.earned_date as earned_date
-       FROM badges b
-       LEFT JOIN user_earned_badges ueb
-         ON ueb.badge_id = b.id AND ueb.user_id = ?
-       ORDER BY b.id ASC`
-    )
-    .all(user.id) as BadgeRow[];
+  // Recompute on-demand to keep badges/challenges in sync with latest logs
+  await checkBadges(user.id);
+  await checkChallenges(user.id);
 
-  const challengesRaw = db
-    .prepare(
-      `SELECT c.id, c.name, c.description, c.type, c.target_value, c.unit,
-              ucp.current_value, ucp.status, ucp.start_date, ucp.end_date
-       FROM challenges c
-       LEFT JOIN user_challenge_progress ucp
-         ON ucp.challenge_id = c.id AND ucp.user_id = ?
-       ORDER BY c.id ASC`
-    )
-    .all(user.id) as ChallengeRow[];
+  const badges = await all<BadgeRow>(
+    `SELECT b.id, b.name, b.description, b.icon_url,
+            CASE WHEN ueb.id IS NULL THEN 0 ELSE 1 END as earned,
+            ueb.earned_date as earned_date
+     FROM badges b
+     LEFT JOIN user_earned_badges ueb
+       ON ueb.badge_id = b.id AND ueb.user_id = ?
+     ORDER BY b.id ASC`,
+    [user.id]
+  );
+
+  const challengesRaw = await all<ChallengeRow>(
+    `SELECT c.id, c.name, c.description, c.type, c.target_value, c.unit,
+            ucp.current_value, ucp.status, ucp.start_date, ucp.end_date
+     FROM challenges c
+     LEFT JOIN user_challenge_progress ucp
+       ON ucp.challenge_id = c.id AND ucp.user_id = ?
+     ORDER BY c.id ASC`,
+    [user.id]
+  );
 
   const challenges = challengesRaw.map((c) => {
     const current = c.current_value ?? 0;

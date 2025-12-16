@@ -170,6 +170,7 @@ async function fetchDashboardData() {
   if (!token) return;
 
   try {
+    // Fetch dashboard data
     const res = await fetch(`${API_BASE}/user/dashboard`, {
       headers: { "Authorization": token },
     });
@@ -181,6 +182,34 @@ async function fetchDashboardData() {
     }
 
     const data = await res.json();
+    
+    // Fetch workouts separately for total burned
+    const today = getTodayDate();
+
+    
+    try {
+      const workoutRes = await fetch(`${API_BASE}/workouts?date=${today}`, {
+        headers: { "Authorization": token },
+      });
+      
+      let totalBurned = 0;
+      if (workoutRes.ok) {
+        const workouts = await workoutRes.json();
+
+        workouts.forEach((w) => {
+          const burned = parseFloat(w.calories_burned) || 0;
+
+          totalBurned += burned;
+        });
+      }
+      
+      data.burned = totalBurned;
+
+    } catch (err) {
+      console.error("[fetchDashboardData] Workouts fetch error:", err);
+      data.burned = 0;
+    }
+    
     updateUI(data);
 
   } catch (err) {
@@ -193,39 +222,60 @@ function updateUI(data) {
   const greetTitle = document.getElementById("greet-title");
   if (greetTitle) greetTitle.innerText = `${getGreeting()}, ${data.username}!`;
 
-  // 2. Targets & Consumed
-  const { consumed, burned, targets, remaining } = data;
+  // 2. Targets & Consumed - with safe conversion
+  let { consumed, burned, targets, remaining } = data;
+  
+
+  
+  // Safe number conversion for consumed
+  const consumedCalories = (consumed?.calories && typeof consumed.calories === 'number') ? consumed.calories : 0;
+  const consumedProtein = (consumed?.protein && typeof consumed.protein === 'number') ? consumed.protein : 0;
+  const consumedCarbs = (consumed?.carbs && typeof consumed.carbs === 'number') ? consumed.carbs : 0;
+  const consumedFat = (consumed?.fat && typeof consumed.fat === 'number') ? consumed.fat : 0;
+  
+  // Safe number conversion for targets (might be strings from API)
+  const targetCalories = parseFloat(targets.calories) || 0;
+  const targetProtein = parseFloat(targets.protein) || 0;
+  const targetCarbs = parseFloat(targets.carbs) || 0;
+  const targetFat = parseFloat(targets.fat) || 0;
+  
+  const burnedValue = (typeof burned === 'number') ? parseFloat(burned) : parseFloat(burned) || 0;
+  const remainingValue = (typeof remaining === 'number') ? remaining : 0;
+  
+
   
   // Net Calories = consumed (แคลอรี่ที่กินไป)
-  const netCalories = Math.round(consumed.calories);
+  const netCalories = Math.round(consumedCalories);
   
   // Goal เพิ่มตาม workout = target + burned
-  const adjustedGoal = targets.calories + burned;
+  const adjustedGoal = targetCalories + burnedValue;
+  
+
   
   // Update Text
-  setText("cal-text", netCalories);
+  setText("cal-text", isNaN(netCalories) ? 0 : netCalories);
   setText("cal-goal", formatNumber(Math.round(adjustedGoal)));
   
-  setText("val-consumed", Math.round(consumed.calories));
-  setText("val-burned", Math.round(burned));
-  setText("val-remaining", Math.round(remaining));
+  setText("val-consumed", isNaN(consumedCalories) ? 0 : Math.round(consumedCalories));
+  setText("val-burned", isNaN(burnedValue) ? 0 : Math.round(burnedValue));
+  setText("val-remaining", isNaN(remainingValue) ? 0 : Math.round(remainingValue));
 
-  // Update Macros
-  setText("macro-p", `${Math.round(consumed.protein)}g / ${Math.round(targets.protein)}g`);
-  setText("macro-c", `${Math.round(consumed.carbs)}g / ${Math.round(targets.carbs)}g`);
-  setText("macro-f", `${Math.round(consumed.fat)}g / ${Math.round(targets.fat)}g`);
+  // Update Macros with safe fallback
+  setText("macro-p", `${Math.round(consumedProtein)}g / ${Math.round(targetProtein)}g`);
+  setText("macro-c", `${Math.round(consumedCarbs)}g / ${Math.round(targetCarbs)}g`);
+  setText("macro-f", `${Math.round(consumedFat)}g / ${Math.round(targetFat)}g`);
 
   // Insights cards
   const insights = data.insights || {};
 
   // Protein balance today
-  const protein = insights.protein || { pct: 0, consumed: 0, target: targets.protein };
+  const protein = insights.protein || { pct: 0, consumed: 0, target: targetProtein };
   const proteinPct = Math.min(100, Math.round(protein.pct || 0));
   setText("ins-protein-main", `${proteinPct}%`);
   setText("ins-protein-sub", `${Math.round(protein.consumed || 0)}g / ${Math.round(protein.target || 0)}g`);
 
   // Carb/Fat balance
-  const carbfat = insights.carbFat || { carbPct: 0, fatPct: 0, carbConsumed: 0, fatConsumed: 0, carbTarget: targets.carbs, fatTarget: targets.fat };
+  const carbfat = insights.carbFat || { carbPct: 0, fatPct: 0, carbConsumed: 0, fatConsumed: 0, carbTarget: targetCarbs, fatTarget: targetFat };
   const carbPctDisplay = Math.min(100, Math.round(carbfat.carbPct || 0));
   const fatPctDisplay = Math.min(100, Math.round(carbfat.fatPct || 0));
   setText("ins-carbfat-main", `${carbPctDisplay}% / ${fatPctDisplay}%`);
@@ -240,24 +290,49 @@ function updateUI(data) {
   const badge = insights.latestBadge;
   if (badge) {
     setText("ins-badge-main", badge.name || "Badge unlocked");
-    setText("ins-badge-sub", `Earned ${badge.earned_date}`);
+    const earnedDate = new Date(badge.earned_date);
+    const formattedDate = earnedDate.toLocaleDateString('en-US', { 
+      month: 'short', 
+      day: 'numeric', 
+      year: 'numeric' 
+    });
+    setText("ins-badge-sub", `Earned ${formattedDate}`);
   } else {
     setText("ins-badge-main", "None yet");
     setText("ins-badge-sub", "Complete goals to unlock");
   }
 
   // Update Progress Bar (based on adjusted goal)
-  const percent = Math.min(100, Math.max(0, (netCalories / adjustedGoal) * 100));
+  // Safe calculation - avoid division by zero and NaN
+  let percent = 0;
+  if (adjustedGoal > 0) {
+    percent = Math.min(100, Math.max(0, (netCalories / adjustedGoal) * 100));
+  }
+  
+  // Check if percent is valid number
+  if (isNaN(percent)) {
+    percent = 0;
+  }
+  
+
+  
   const progressBar = document.getElementById("cal-progress");
   const progressLabel = document.getElementById("cal-percent");
   
-  if (progressBar) progressBar.style.width = `${percent}%`;
+  if (progressBar) {
+    progressBar.style.width = `${percent}%`;
+
+  }
   if (progressLabel) progressLabel.innerText = `${Math.round(percent)}%`;
 
-  // Update Circle Gradient
+  // Update Circle Ring with conic-gradient (starts from top, goes clockwise)
   const circle = document.getElementById("cal-circle");
   if (circle) {
-    circle.style.background = `conic-gradient(#2ecc71 ${percent}%, #eee ${percent}%)`;
+    const gradientAngle = (percent / 100) * 360;
+    circle.style.background = `
+      radial-gradient(circle, var(--bg-card) 68%, transparent 70%),
+      conic-gradient(from 90deg at 50% 50%, #10b981 0deg ${gradientAngle}deg, #f3f4f6 ${gradientAngle}deg 360deg)
+    `;
   }
 }
 

@@ -1,11 +1,13 @@
 import { Hono } from "hono";
-import { db } from "../database/db.js";
+import { get, all } from "../database/db.js";
 import jwt from "jsonwebtoken";
 import { JWT_SECRET } from "../config.js";
 const achievementsRoute = new Hono();
 // Auth middleware
 achievementsRoute.use("*", async (c, next) => {
-    const token = c.req.header("Authorization") || "";
+    const authHeader = c.req.header("Authorization") || "";
+    // Support both "Bearer token" and plain "token"
+    const token = authHeader.startsWith("Bearer ") ? authHeader.slice(7) : authHeader;
     if (!token)
         return c.json({ error: "Not authenticated" }, 401);
     try {
@@ -17,25 +19,21 @@ achievementsRoute.use("*", async (c, next) => {
         return c.json({ error: "Invalid token" }, 401);
     }
 });
-achievementsRoute.get("/", (c) => {
+achievementsRoute.get("/", async (c) => {
     const user = c.get("user");
-    const badges = db
-        .prepare(`SELECT b.id, b.name, b.description, b.icon_url,
-              CASE WHEN ueb.id IS NULL THEN 0 ELSE 1 END as earned,
-              ueb.earned_date as earned_date
-       FROM badges b
-       LEFT JOIN user_earned_badges ueb
-         ON ueb.badge_id = b.id AND ueb.user_id = ?
-       ORDER BY b.id ASC`)
-        .all(user.id);
-    const challengesRaw = db
-        .prepare(`SELECT c.id, c.name, c.description, c.type, c.target_value, c.unit,
-              ucp.current_value, ucp.status, ucp.start_date, ucp.end_date
-       FROM challenges c
-       LEFT JOIN user_challenge_progress ucp
-         ON ucp.challenge_id = c.id AND ucp.user_id = ?
-       ORDER BY c.id ASC`)
-        .all(user.id);
+    const badges = await all(`SELECT b.id, b.name, b.description, b.icon_url,
+            CASE WHEN ueb.id IS NULL THEN 0 ELSE 1 END as earned,
+            ueb.earned_date as earned_date
+     FROM badges b
+     LEFT JOIN user_earned_badges ueb
+       ON ueb.badge_id = b.id AND ueb.user_id = ?
+     ORDER BY b.id ASC`, [user.id]);
+    const challengesRaw = await all(`SELECT c.id, c.name, c.description, c.type, c.target_value, c.unit,
+            ucp.current_value, ucp.status, ucp.start_date, ucp.end_date
+     FROM challenges c
+     LEFT JOIN user_challenge_progress ucp
+       ON ucp.challenge_id = c.id AND ucp.user_id = ?
+     ORDER BY c.id ASC`, [user.id]);
     const challenges = challengesRaw.map((c) => {
         const current = c.current_value ?? 0;
         const target = c.target_value ?? 0;
