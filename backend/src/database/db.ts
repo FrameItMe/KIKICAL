@@ -15,13 +15,11 @@ export const pool = createPool({
   user: MYSQL_USER,
   password: MYSQL_PASSWORD,
   database: MYSQL_DATABASE,
-  // keep dates as strings to avoid TZ shifting and off-by-one
   dateStrings: true,
-  // set explicit timezone; change if your DB server runs a different zone
   timezone: '+07:00',
   charset: 'utf8mb4',
   waitForConnections: true,
-  connectionLimit: 10,
+  connectionLimit: 20,
   maxIdle: 5,
   idleTimeout: 60000,
 });

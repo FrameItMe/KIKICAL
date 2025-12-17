@@ -2,7 +2,7 @@ const API_BASE = "http://localhost:8000";
 
 document.addEventListener("DOMContentLoaded", () => {
   checkAuth();
-  setupMobileNav(); // Add mobile nav handlers
+  setupMobileNav();
   loadProfile();
   setupEventListeners();
 });

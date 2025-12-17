@@ -172,7 +172,7 @@ function computeSummary() {
   const goal = setupData.goal || "maintain";
   const targetWeight = setupData.target_weight_kg || weight;
 
-  // BMR
+  // BMR 
   let BMR;
   if (gender === "male") {
     BMR = 10 * weight + 6.25 * height - 5 * age + 5;
@@ -243,7 +243,6 @@ async function finishSetup() {
 
 
   try {
-    // ใช้วันเกิดที่ผู้ใช้กรอก ถ้าไม่มีให้ fallback จากอายุ (ประมาณปีเกิด)
     let birthdate = setupData.birthdate;
     if (!birthdate) {
       const nowYear = new Date().getFullYear();
@@ -329,7 +328,6 @@ async function initPredashboard() {
       }
     }
   } catch (err) {
-    // Silently fail
   }
 
   // Check setup status
@@ -344,7 +342,6 @@ async function initPredashboard() {
       }
     }
   } catch (err) {
-    // Silently fail
   }
 
   showSection(true);
