@@ -34,7 +34,6 @@ authRoute.post("/register", async (c) => {
     //hash password
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // provide defaults for required fields if not present from frontend
     const gender = body.gender || "unspecified";
     const birthdate = body.birthdate || null;
     const height_cm = body.height_cm ?? 0;
@@ -42,7 +41,6 @@ authRoute.post("/register", async (c) => {
     const activity_level = body.activity_level || "unknown";
     const target_weight_kg = body.target_weight_kg ?? null;
 
-    //execute insertion
     const result = await run(
       `INSERT INTO users 
        (name, email, password_hash, gender, birthdate, height_cm, weight_kg, activity_level, target_weight_kg, created_at)

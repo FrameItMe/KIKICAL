@@ -127,6 +127,7 @@ function getTodayDate() {
   return new Date().toLocaleDateString("sv-SE"); // YYYY-MM-DD in local time
 }
 
+
 function checkAuth() {
   const token = localStorage.getItem("token");
   if (!token) {
@@ -303,7 +304,6 @@ function updateUI(data) {
   }
 
   // Update Progress Bar (based on adjusted goal)
-  // Safe calculation - avoid division by zero and NaN
   let percent = 0;
   if (adjustedGoal > 0) {
     percent = Math.min(100, Math.max(0, (netCalories / adjustedGoal) * 100));

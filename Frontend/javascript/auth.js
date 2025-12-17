@@ -51,7 +51,7 @@ async function handleRegister(event) {
       msgEl.classList.add("success");
     }
 
-    // redirect immediately after successful registration
+    // redirect  after successful registration
     window.location.href = "login.html";
 
   } catch (err) {
@@ -101,7 +101,7 @@ async function handleLogin(event) {
       return;
     }
 
-    // เก็บ token ใน localStorage (simple approach)
+    // เก็บ token ใน localStorage
     if (data.token) {
       localStorage.setItem("token", data.token);
     }

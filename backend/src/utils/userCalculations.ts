@@ -1,11 +1,3 @@
-/**
- * Helper functions for user profile calculations
- * Used by user setup endpoint to compute BMR, TDEE, and macro targets
- */
-
-/**
- * Calculate user age from birthdate
- */
 export function calculateAge(birthdate: string): number | null {
   const birth = new Date(birthdate);
   if (isNaN(birth.getTime())) {
@@ -20,8 +12,8 @@ export function calculateAge(birthdate: string): number | null {
   return age;
 }
 
-/**
- * Calculate Basal Metabolic Rate (BMR) using Mifflin-St Jeor equation
+/*
+  Calculate Basal Metabolic Rate (BMR) using Mifflin-St Jeor equation
  */
 export function calculateBMR(gender: string, weight: number, height: number, age: number): number {
   if (gender === "male") {
@@ -31,8 +23,8 @@ export function calculateBMR(gender: string, weight: number, height: number, age
   }
 }
 
-/**
- * Calculate Total Daily Energy Expenditure (TDEE) from BMR and activity level
+/*
+  Calculate Total Daily Energy Expenditure (TDEE) from BMR and activity level
  */
 export function calculateTDEE(bmr: number, activityLevel: string): number {
   const activityMultipliers: Record<string, number> = {
@@ -47,8 +39,8 @@ export function calculateTDEE(bmr: number, activityLevel: string): number {
   return bmr * mult;
 }
 
-/**
- * Calculate calorie target based on TDEE and goal
+/*
+  Calculate calorie target based on TDEE and goal
  */
 export function calculateCalorieTarget(tdee: number, goal: string): number {
   let calTarget = tdee;
@@ -57,8 +49,8 @@ export function calculateCalorieTarget(tdee: number, goal: string): number {
   return calTarget;
 }
 
-/**
- * Calculate macro targets (protein, fat, carbs) based on calorie target and weight
+/*
+  Calculate macro targets (protein, fat, carbs) based on calorie target and weight
  */
 export function calculateMacros(
   calTarget: number,

@@ -48,14 +48,13 @@ userRoute.post("/setup", async (c) => {
   const body = await c.req.json();
   
   const gender = body.gender;
-  const birthdate = body.birthdate || null; // Handle empty string as null
+  const birthdate = body.birthdate || null;
   const height = Number(body.height_cm);
   const weight = Number(body.weight_kg);
   const activity = body.activity_level;
   const goal = body.goal as "lose" | "maintain" | "gain";
   let target_weight = body.target_weight_kg ? Number(body.target_weight_kg) : null;
 
-  // basic validation to avoid silent failures / NaN writes
   if (!gender || !birthdate || !activity || !goal) {
     return c.json({ error: "Missing required fields" }, 400);
   }

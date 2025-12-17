@@ -1,8 +1,3 @@
-/**
- * Global notification system for achievement unlocks
- * Shows toast notifications in bottom-right corner
- */
-
 let notificationQueue = [];
 let isShowingNotification = false;
 
@@ -67,5 +62,4 @@ function createNotificationElement(achievement, type) {
   return notification;
 }
 
-// Make it globally available
 window.showAchievementNotification = showAchievementNotification;
